@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 
@@ -15,25 +16,39 @@ import org.qp.android.questopiabundle.lib.LibWindowType;
 
 public class QuestopiaBundle extends Service implements GameInterface {
 
-    private final LibProxyImpl libProxy = new LibProxyImpl(getBaseContext());
+    private final LibProxyImpl libProxy = new LibProxyImpl(this);
     private LibRefIRequest request = new LibRefIRequest();
 
     @Override
-    public HtmlProcessor getHtmlProcessor() {
-        return null;
-    }
-
-    @Override
     public AudioPlayer getAudioPlayer() {
-        return null;
+        return new AudioPlayer() {
+            @Override
+            public boolean isPlayingFile(String filePath) {
+                return false;
+            }
+
+            @Override
+            public void closeAllFiles() {
+
+            }
+
+            @Override
+            public void closeFile(String filePath) {
+
+            }
+
+            @Override
+            public void playFile(String path, int volume) {
+
+            }
+        };
     }
 
     @Override
     public HostApplication getHostApplication() {
-        HostApplication application = gameDir -> {
-
+        return gameDirUri -> {
+            Log.d("getHostApplication", " "+gameDirUri);
         };
-        return null;
     }
 
     private void startLib() {

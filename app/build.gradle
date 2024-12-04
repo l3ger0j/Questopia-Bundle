@@ -53,6 +53,7 @@ dependencies {
     implementation libs.constraintlayout
 
     implementation libs.storage
+    implementation libs.jsoup
 
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit

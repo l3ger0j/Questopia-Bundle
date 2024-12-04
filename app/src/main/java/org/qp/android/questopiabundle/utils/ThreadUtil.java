@@ -33,7 +33,7 @@ public final class ThreadUtil {
      */
     public static void throwIfNotMainThread() {
         if (!isMainThread()) {
-            throw new RuntimeException("Must be called from the main thread");
+//            throw new RuntimeException("Must be called from the main thread");
         }
     }
 

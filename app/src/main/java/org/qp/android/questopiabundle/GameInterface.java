@@ -5,8 +5,6 @@ import org.qp.android.questopiabundle.lib.LibWindowType;
 
 public interface GameInterface {
 
-    HtmlProcessor getHtmlProcessor();
-
     AudioPlayer getAudioPlayer();
 
     HostApplication getHostApplication();

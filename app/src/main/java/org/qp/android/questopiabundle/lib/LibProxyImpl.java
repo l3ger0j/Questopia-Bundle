@@ -1,5 +1,14 @@
 package org.qp.android.questopiabundle.lib;
 
+import static org.qp.android.questopiabundle.utils.FileUtil.fromFullPath;
+import static org.qp.android.questopiabundle.utils.FileUtil.fromRelPath;
+import static org.qp.android.questopiabundle.utils.FileUtil.getFileContents;
+import static org.qp.android.questopiabundle.utils.FileUtil.writeFileContents;
+import static org.qp.android.questopiabundle.utils.HtmlUtil.getSrcDir;
+import static org.qp.android.questopiabundle.utils.HtmlUtil.isContainsHtmlTags;
+import static org.qp.android.questopiabundle.utils.HtmlUtil.removeHtmlTags;
+import static org.qp.android.questopiabundle.utils.PathUtil.getFilename;
+import static org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath;
 import static org.qp.android.questopiabundle.utils.ThreadUtil.throwIfNotMainThread;
 import static org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty;
 import static org.qp.android.questopiabundle.utils.StringUtil.isNotEmpty;
@@ -20,7 +29,6 @@ import com.anggrayudi.storage.file.DocumentFileCompat;
 import org.qp.android.questopiabundle.AudioPlayer;
 import org.qp.android.questopiabundle.GameInterface;
 import org.qp.android.questopiabundle.HostApplication;
-import org.qp.android.questopiabundle.HtmlProcessor;
 import org.qp.android.questopiabundle.dto.lib.LibActionData;
 import org.qp.android.questopiabundle.dto.lib.LibErrorData;
 import org.qp.android.questopiabundle.dto.lib.LibListItem;
@@ -58,10 +66,6 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
         return DocumentFileCompat.fromUri(context, gameState.gameDir);
     }
 
-    private HtmlProcessor getHtmlProcessor() {
-        return gameInterface.getHtmlProcessor();
-    }
-
     public AudioPlayer getAudioPlayer() {
         return gameInterface.getAudioPlayer();
     }
@@ -89,15 +93,14 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
     }
 
     private boolean loadGameWorld() {
-        // TODO: 28.11.2024 Receive from IPC host
-//        final var gameFileUri = gameState.gameFile.getUri();
-//        final var gameFileFullPath = gameState.gameFileFullPath;
-//        final var gameData = getFileContents(context , gameFileUri);
-//        if (gameData == null) return false;
-//        if (!nativeMethods.QSPLoadGameWorldFromData(gameData, gameData.length, gameFileFullPath)) {
-//            showLastQspError();
-//            return false;
-//        }
+        final var gameFileUri = gameState.gameFile;
+        final var gameFileFullPath = gameState.gameFileFullPath;
+        final var gameData = getFileContents(context, gameFileUri);
+        if (gameData == null) return false;
+        if (!nativeMethods.QSPLoadGameWorldFromData(gameData, gameData.length, gameFileFullPath)) {
+            showLastQspError();
+            return false;
+        }
         return true;
     }
 
@@ -173,18 +176,17 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
             if (actionResult.image() == null) {
                 action.pathToImage = null;
             } else {
-                // TODO: 28.11.2024 Receive from IPC host
-//                var tempPath = normalizeContentPath(getFilename(actionResult.image()));
-//                var fileFromPath = fromRelPath(context, tempPath, curGameDir, false);
-//                if (fileFromPath != null) {
-//                    action.pathToImage = String.valueOf(fileFromPath.getUri());
-//                } else {
-//                    action.pathToImage = null;
-//                }
+                var tempPath = normalizeContentPath(getFilename(actionResult.image()));
+                var fileFromPath = fromRelPath(context, tempPath, curGameDir, false);
+                if (fileFromPath != null) {
+                    action.pathToImage = String.valueOf(fileFromPath.getUri());
+                } else {
+                    action.pathToImage = null;
+                }
             }
 
             action.text = gameState.interfaceConfig.useHtml
-                    ? getHtmlProcessor().removeHtmlTags(actionResult.name())
+                    ? removeHtmlTags(actionResult.name())
                     : actionResult.name();
 
             actions.add(action);
@@ -205,19 +207,18 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
             var curGameDir = getCurGameDir();
 
             if (objectResult.name().contains("<img")) {
-                // TODO: 28.11.2024 Receive from IPC host
-//                if (getHtmlProcessor().isContainsHtmlTags(objectResult.name())) {
-//                    var tempPath = getHtmlProcessor().getSrcDir(objectResult.name());
-//                    var fileFromPath = fromRelPath(context, tempPath, curGameDir, false);
-//                    object.pathToImage = String.valueOf(fileFromPath);
-//                } else {
-//                    var fileFromPath = fromRelPath(context, objectResult.name(), curGameDir, false);
-//                    object.pathToImage = String.valueOf(fileFromPath);
-//                }
+                if (isContainsHtmlTags(objectResult.name())) {
+                    var tempPath = getSrcDir(objectResult.name());
+                    var fileFromPath = fromRelPath(context, tempPath, curGameDir, false);
+                    object.pathToImage = String.valueOf(fileFromPath);
+                } else {
+                    var fileFromPath = fromRelPath(context, objectResult.name(), curGameDir, false);
+                    object.pathToImage = String.valueOf(fileFromPath);
+                }
             } else {
                 object.pathToImage = objectResult.image();
                 object.text = gameState.interfaceConfig.useHtml
-                        ? getHtmlProcessor().removeHtmlTags(objectResult.name())
+                        ? removeHtmlTags(objectResult.name())
                         : objectResult.name();
             }
             objects.add(object);
@@ -312,12 +313,11 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
             runOnQspThread(() -> loadGameState(uri));
             return;
         }
-        // TODO: 28.11.2024 Receive from IPC
-//        final var gameData = getFileContents(context, uri);
-//        if (gameData == null) return;
-//        if (!nativeMethods.QSPOpenSavedGameFromData(gameData, gameData.length, true)) {
-//            showLastQspError();
-//        }
+        final var gameData = getFileContents(context, uri);
+        if (gameData == null) return;
+        if (!nativeMethods.QSPOpenSavedGameFromData(gameData, gameData.length, true)) {
+            showLastQspError();
+        }
     }
 
     @Override
@@ -326,10 +326,9 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
             runOnQspThread(() -> saveGameState(uri));
             return;
         }
-        // TODO: 28.11.2024 Receive from IPC
-//        final var gameData = nativeMethods.QSPSaveGameAsData(false);
-//        if (gameData == null) return;
-//        writeFileContents(context , uri , gameData);
+        final var gameData = nativeMethods.QSPSaveGameAsData(false);
+        if (gameData == null) return;
+        writeFileContents(context, uri, gameData);
     }
 
     @Override
@@ -620,12 +619,10 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
 
     @Override
     public byte[] GetFileContents(String path) {
-        // TODO: 28.11.2024 Send to IPC host
-//        var targetFile = fromFullPath(context, path, getCurGameDir());
-//        if (targetFile == null) return null;
-//        var targetFileUri = targetFile.getUri();
-//        return getFileContents(context , targetFileUri);
-        return null;
+        var targetFile = fromFullPath(context, path, getCurGameDir());
+        if (targetFile == null) return null;
+        var targetFileUri = targetFile.getUri();
+        return getFileContents(context , targetFileUri);
     }
 
     @Override
