@@ -6,5 +6,6 @@ import org.qp.android.questopiabundle.LibException;
 interface AsyncCallbacks {
     void sendLibGameState(in LibResult libResult);
     void sendLibRef(in LibResult libResult);
+    void sendChangeCurrGameDir(in Uri gameDirUri);
     void onError(in LibException libException);
 }

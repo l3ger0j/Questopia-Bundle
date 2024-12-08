@@ -18,13 +18,14 @@ public class QuestopiaBundle extends Service implements GameInterface {
 
     private final LibProxyImpl libProxy = new LibProxyImpl(this);
     private LibRefIRequest request = new LibRefIRequest();
+    private Uri sendGameDirUri;
 
     @Override
     public AudioPlayer getAudioPlayer() {
         return new AudioPlayer() {
             @Override
             public boolean isPlayingFile(String filePath) {
-                return false;
+                return true;
             }
 
             @Override
@@ -46,9 +47,7 @@ public class QuestopiaBundle extends Service implements GameInterface {
 
     @Override
     public HostApplication getHostApplication() {
-        return gameDirUri -> {
-            Log.d("getHostApplication", " "+gameDirUri);
-        };
+        return gameDirUri -> sendGameDirUri = gameDirUri;
     }
 
     private void startLib() {
@@ -142,6 +141,7 @@ public class QuestopiaBundle extends Service implements GameInterface {
                                        Uri gameDirUri,
                                        Uri gameFileUri,
                                        String gameFullPath) throws RemoteException {
+                Log.d(this.getClass().getSimpleName(), "Debug: "+"\nGameID|"+gameId+"\nGameTitle|"+gameTitle+"\nGameDirUri|"+gameDirUri+"\nGameFileUri|"+gameFileUri);
                 libProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri, gameFullPath);
             }
 
@@ -149,6 +149,9 @@ public class QuestopiaBundle extends Service implements GameInterface {
             public void sendAsync(AsyncCallbacks callbacks) throws RemoteException {
                 callbacks.sendLibGameState(new LibResult<>(libProxy.getGameState(), LibGameState.class));
                 callbacks.sendLibRef(new LibResult<>(request, LibRefIRequest.class));
+                if (sendGameDirUri != null) {
+                    callbacks.sendChangeCurrGameDir(sendGameDirUri);
+                }
             }
         };
     }
