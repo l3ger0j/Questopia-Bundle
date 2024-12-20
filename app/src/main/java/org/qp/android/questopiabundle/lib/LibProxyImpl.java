@@ -1,5 +1,6 @@
 package org.qp.android.questopiabundle.lib;
 
+import static org.qp.android.questopiabundle.utils.FileUtil.documentWrap;
 import static org.qp.android.questopiabundle.utils.FileUtil.fromFullPath;
 import static org.qp.android.questopiabundle.utils.FileUtil.fromRelPath;
 import static org.qp.android.questopiabundle.utils.FileUtil.getFileContents;
@@ -9,7 +10,6 @@ import static org.qp.android.questopiabundle.utils.HtmlUtil.isContainsHtmlTags;
 import static org.qp.android.questopiabundle.utils.HtmlUtil.removeHtmlTags;
 import static org.qp.android.questopiabundle.utils.PathUtil.getFilename;
 import static org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath;
-import static org.qp.android.questopiabundle.utils.ThreadUtil.throwIfNotMainThread;
 import static org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty;
 import static org.qp.android.questopiabundle.utils.StringUtil.isNotEmpty;
 import static org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread;
@@ -28,20 +28,21 @@ import com.anggrayudi.storage.file.DocumentFileCompat;
 
 import org.qp.android.questopiabundle.AudioPlayer;
 import org.qp.android.questopiabundle.GameInterface;
-import org.qp.android.questopiabundle.HostApplication;
-import org.qp.android.questopiabundle.dto.lib.LibActionData;
-import org.qp.android.questopiabundle.dto.lib.LibErrorData;
-import org.qp.android.questopiabundle.dto.lib.LibListItem;
-import org.qp.android.questopiabundle.dto.lib.LibMenuItem;
-import org.qp.android.questopiabundle.dto.lib.LibObjectData;
-import org.qp.android.questopiabundle.dto.lib.LibVarValResp;
+import org.qp.android.questopiabundle.dto.LibActionData;
+import org.qp.android.questopiabundle.dto.LibErrorData;
+import org.qp.android.questopiabundle.dto.LibListItem;
+import org.qp.android.questopiabundle.dto.LibMenuItem;
+import org.qp.android.questopiabundle.dto.LibObjectData;
+import org.qp.android.questopiabundle.dto.LibVarValResp;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class LibProxyImpl implements LibIProxy, LibICallbacks {
-    private final String TAG = this.getClass().getSimpleName();
+public class LibProxyImpl implements LibIProxy, LibCallbacks {
+    private final String TAG = "LibProxyImpl";
 
     private final ReentrantLock libLock = new ReentrantLock();
     private final LibGameState gameState = new LibGameState();
@@ -58,12 +59,8 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
         this.context = context;
     }
 
-    private HostApplication getApplication() {
-        return gameInterface.getHostApplication();
-    }
-
     private DocumentFile getCurGameDir() {
-        return DocumentFileCompat.fromUri(context, gameState.gameDir);
+        return DocumentFileCompat.fromUri(context, gameState.gameDirUri);
     }
 
     public AudioPlayer getAudioPlayer() {
@@ -71,7 +68,7 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
     }
 
     private void runOnQspThread(final Runnable runnable) {
-        throwIfNotMainThread();
+//        throwIfNotMainThread();
         if (libThread == null) {
             Log.w(TAG, "Lib thread has not been started!");
             return;
@@ -93,14 +90,22 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
     }
 
     private boolean loadGameWorld() {
-        final var gameFileUri = gameState.gameFile;
-        final var gameFileFullPath = gameState.gameFileFullPath;
+        final var gameFileUri = gameState.gameFileUri;
+        var gameFileFullPath = "";
+        if (String.valueOf(gameFileUri).startsWith("file:///")) {
+            gameFileFullPath = new File(String.valueOf(gameFileUri)).getAbsolutePath();
+        } else {
+            gameFileFullPath = documentWrap(DocumentFileCompat.fromUri(context, gameFileUri)).getAbsolutePath(context);
+        }
         final var gameData = getFileContents(context, gameFileUri);
         if (gameData == null) return false;
+
         if (!nativeMethods.QSPLoadGameWorldFromData(gameData, gameData.length, gameFileFullPath)) {
             showLastQspError();
+            Log.d("QSP", "World is not loaded!");
             return false;
         }
+        Log.d("QSP", "World is loaded!");
         return true;
     }
 
@@ -133,7 +138,7 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
 
         var htmlResult = (LibVarValResp) nativeMethods.QSPGetVarValues("USEHTML", 0);
         if (htmlResult.isSuccess()) {
-            boolean useHtml = htmlResult.intValue() != 0;
+            var useHtml = htmlResult.intValue() != 0;
             if (config.useHtml != useHtml) {
                 config.useHtml = useHtml;
                 changed = true;
@@ -251,7 +256,7 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
     }
 
     public void stopLibThread() {
-        throwIfNotMainThread();
+//        throwIfNotMainThread();
         if (libThread == null) return;
         if (libThreadInit) {
             var handler = libHandler;
@@ -273,31 +278,25 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
     public void runGame(long gameId,
                         String gameTitle,
                         Uri gameDirUri,
-                        Uri gameFileUri,
-                        String gameFileFullPath) {
-        runOnQspThread(() -> doRunGame(gameId, gameTitle, gameDirUri, gameFileUri, gameFileFullPath));
+                        Uri gameFileUri) {
+        runOnQspThread(() -> doRunGame(gameId, gameTitle, gameDirUri, gameFileUri));
     }
 
     @Override
     public void restartGame() {
-        runOnQspThread(() -> doRunGame(gameState.gameId, gameState.gameTitle, gameState.gameDir, gameState.gameFile, gameState.gameFileFullPath));
+        runOnQspThread(() -> doRunGame(gameState.gameId, gameState.gameTitle, gameState.gameDirUri, gameState.gameFileUri));
     }
 
-    private void doRunGame(final long id,
-                           final String title,
-                           final Uri dir,
-                           final Uri file,
-                           final String gameFullPath) {
+    private void doRunGame(final long id, final String title, final Uri dir, final Uri file) {
         gameInterface.doWithCounterDisabled(() -> {
             getAudioPlayer().closeAllFiles();
             gameState.reset();
             gameState.gameRunning = true;
             gameState.gameId = id;
             gameState.gameTitle = title;
-            gameState.gameDir = dir;
-            gameState.gameFile = file;
-            gameState.gameFileFullPath = gameFullPath;
-            getApplication().setCurrentGameDir(dir);
+            gameState.gameDirUri = dir;
+            gameState.gameFileUri = file;
+            gameInterface.doChangeCurrGameDir(dir);
             if (!loadGameWorld()) return;
             gameStartTime = SystemClock.elapsedRealtime();
             lastMsCountCallTime = 0;
@@ -475,14 +474,12 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
     public void ShowPicture(String path) {
         var inter = gameInterface;
         if (inter == null) return;
-
-        // TODO: 28.11.2024 Send path as is
-//        if (isNotEmpty(path)) {
-//            var picFile = fromFullPath(context, path, getCurGameDir());
-//            if (picFile == null) return;
-//            var pathToPic = String.valueOf(picFile.getUri());
-//            inter.showDialog(GameInterface.TypeDialog.DIALOG_PICTURE, pathToPic);
-//        }
+        if (isNotEmpty(path)) {
+            var picFile = fromFullPath(context, path, getCurGameDir());
+            if (picFile == null) return;
+            var pathToPic = String.valueOf(picFile.getUri());
+            inter.showDialog(GameInterface.TypeDialog.DIALOG_PICTURE, pathToPic);
+        }
     }
 
     @Override
@@ -528,18 +525,17 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
         if (filename == null) {
             inter.showLoadGamePopup();
         } else {
-            // TODO: 28.11.2024 Replace to request
-//            try {
-//                var saveFile = fromFullPath(context, filename, getCurGameDir());
-//                if (saveFile == null) {
-//                    Log.e(TAG , "Save file not found");
-//                    return;
-//                }
-//                var saveFileUri = saveFile.getUri();
-//                inter.doWithCounterDisabled(() -> loadGameState(saveFileUri));
-//            } catch (Exception e) {
-//                Log.e(TAG , "Error: ", e);
-//            }
+            try {
+                var saveFile = fromFullPath(context, filename, getCurGameDir());
+                if (saveFile == null) {
+                    Log.e(TAG , "Save file not found");
+                    return;
+                }
+                var saveFileUri = saveFile.getUri();
+                inter.doWithCounterDisabled(() -> loadGameState(saveFileUri));
+            } catch (Exception e) {
+                Log.e(TAG , "Error: ", e);
+            }
         }
     }
 
@@ -627,16 +623,17 @@ public class LibProxyImpl implements LibIProxy, LibICallbacks {
 
     @Override
     public void ChangeQuestPath(String path) {
-        // TODO: 28.11.2024 Send to IPC host
-//        var newGameDir = fromFullPath(context, path , getCurGameDir());
-//        if (newGameDir == null || !newGameDir.exists()) {
-//            Log.e(TAG,"Game directory not found: " + path);
-//            return;
-//        }
-//        if (!Objects.equals(getCurGameDir() , newGameDir)) {
-//            gameState.gameDir = newGameDir;
-//            getApplication().setCurrentGameDir(newGameDir);
-//        }
+        var newGameDir = fromFullPath(context, path , getCurGameDir());
+        if (newGameDir == null || !newGameDir.exists()) {
+            Log.e(TAG,"Game directory not found: " + path);
+            return;
+        }
+        var currGameDirUri = getCurGameDir().getUri();
+        var newGameDirUri = newGameDir.getUri();
+        if (!Objects.equals(currGameDirUri, newGameDirUri)) {
+            gameState.gameDirUri = newGameDirUri;
+            gameInterface.doChangeCurrGameDir(newGameDirUri);
+        }
     }
 
     // endregion LibQpCallbacks

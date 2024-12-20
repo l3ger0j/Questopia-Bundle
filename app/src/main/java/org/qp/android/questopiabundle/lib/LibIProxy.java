@@ -19,7 +19,7 @@ public interface LibIProxy {
 
     void enableDebugMode(boolean isDebug);
 
-    void runGame(long gameId, String gameTitle, Uri gameDirUri, Uri gameFileUri, String gameFileFullPath);
+    void runGame(long gameId, String gameTitle, Uri gameDirUri, Uri gameFileUri);
 
     void restartGame();
 

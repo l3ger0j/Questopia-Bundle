@@ -7,5 +7,8 @@ interface AsyncCallbacks {
     void sendLibGameState(in LibResult libResult);
     void sendLibRef(in LibResult libResult);
     void sendChangeCurrGameDir(in Uri gameDirUri);
+
+    String doOnShowInputDialog(String inputText);
+
     void onError(in LibException libException);
 }
