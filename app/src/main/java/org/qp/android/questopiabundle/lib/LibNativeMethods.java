@@ -11,9 +11,9 @@ public class LibNativeMethods {
         System.loadLibrary("ndkqsp");
     }
 
-    private final LibICallbacks callbacks;
+    private final LibCallbacks callbacks;
 
-    public LibNativeMethods(LibICallbacks callbacks) {
+    public LibNativeMethods(LibCallbacks callbacks) {
         this.callbacks = Objects.requireNonNull(callbacks, "callbacks must not be null");
     }
 

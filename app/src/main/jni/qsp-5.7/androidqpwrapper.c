@@ -11,7 +11,7 @@ void Java_org_qp_android_questopiabundle_lib_LibNativeMethods_QSPInit(JNIEnv *en
   qspJniEnv = env;
 
   jclass cls = (*env)->GetObjectClass(env, this);
-  jfieldID fid = (*env)->GetFieldID(env, cls, "callbacks", "Lorg/qp/android/questopiabundle/lib/LibICallbacks;");
+  jfieldID fid = (*env)->GetFieldID(env, cls, "callbacks", "Lorg/qp/android/questopiabundle/lib/LibCallbacks;");
   jobject callbacks = (*env)->GetObjectField(env, this, fid);
   qspCallbacksObj = (*env)->NewGlobalRef(env, callbacks);
 
@@ -177,7 +177,7 @@ jobject Java_org_qp_android_questopiabundle_lib_LibNativeMethods_QSPGetActionDat
   if (isz != NULL)
 	free(isz);
 
-  jclass clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/dto/lib/LibActionData");
+  jclass clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/dto/LibActionData");
   if (clazz == 0)
 	return 0;
   jobject obj = (*env)->AllocObject(env, clazz);
@@ -237,7 +237,7 @@ jobject Java_org_qp_android_questopiabundle_lib_LibNativeMethods_QSPGetObjectDat
   if (isz != NULL)
 	free(isz);
 
-  jclass clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/dto/lib/LibObjectData");
+  jclass clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/dto/LibObjectData");
   if (clazz == 0)
 	return 0;
   jobject obj = (*env)->AllocObject(env, clazz);
@@ -309,7 +309,7 @@ jobject Java_org_qp_android_questopiabundle_lib_LibNativeMethods_QSPGetVarValues
   QSP_BOOL result = QSPGetVarValues(strConverted, (int)ind, &numVal, &strVal);
 
   // Attempt to find the GetVarValuesResponse class.
-  jclass clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/dto/lib/LibVarValResp");
+  jclass clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/dto/LibVarValResp");
   // If this class does not exist then return null.
   if (clazz == 0)
 	return NULL;
@@ -406,7 +406,7 @@ jboolean Java_org_qp_android_questopiabundle_lib_LibNativeMethods_QSPExecUserInp
 //
 ///* Get information about the latest error */
 jobject Java_org_qp_android_questopiabundle_lib_LibNativeMethods_QSPGetLastErrorData(JNIEnv *env, jobject this) {
-  jclass clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/dto/lib/LibErrorData");
+  jclass clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/dto/LibErrorData");
   if (clazz == 0)
 	return NULL;
   jfieldID fid = (*env)->GetFieldID(env, clazz, "locName", "Ljava/lang/String;");

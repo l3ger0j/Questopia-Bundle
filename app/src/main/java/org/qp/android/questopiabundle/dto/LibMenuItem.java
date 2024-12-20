@@ -1,4 +1,4 @@
-package org.qp.android.questopiabundle.dto.lib;
+package org.qp.android.questopiabundle.dto;
 
 import android.os.Parcel;
 import android.os.Parcelable;

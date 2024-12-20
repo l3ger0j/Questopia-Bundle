@@ -1,4 +1,4 @@
-package org.qp.android.questopiabundle.dto.lib;
+package org.qp.android.questopiabundle.dto;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -21,17 +21,17 @@ public class LibListItem implements Parcelable {
         }
     };
 
-    public String pathToImage;
     public String text;
+    public String pathToImage;
 
     public LibListItem() {
-        pathToImage = "";
         text = "";
+        pathToImage = "";
     }
 
     protected LibListItem(Parcel in) {
-        pathToImage = in.readString();
         text = in.readString();
+        pathToImage = in.readString();
     }
 
     @Override
@@ -50,7 +50,7 @@ public class LibListItem implements Parcelable {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(pathToImage);
         dest.writeString(text);
+        dest.writeString(pathToImage);
     }
 }
