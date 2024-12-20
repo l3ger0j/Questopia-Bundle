@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.documentfile.provider.DocumentFile;
 
+import com.anggrayudi.storage.FileWrapper;
 import com.anggrayudi.storage.file.DocumentFileUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -16,7 +17,7 @@ import java.io.IOException;
 public final class FileUtil {
 
     @Nullable
-    public static byte[] getFileContents(@NonNull Context context ,
+    public static byte[] getFileContents(@NonNull Context context,
                                          @NonNull Uri uriContent) {
         var resolver = context.getContentResolver();
         try (var in = resolver.openInputStream(uriContent);
@@ -29,9 +30,13 @@ public final class FileUtil {
             return out.toByteArray();
         } catch (Exception ex) {
             // TODO: 04.12.2024 Add logger
-//            Log.e(TAG , "Error reading file: " + uriContent , ex);
+            Log.e("FileUtil" , "Error reading file: " + uriContent , ex);
             return null;
         }
+    }
+
+    public static FileWrapper.Document documentWrap(DocumentFile inputFile) {
+        return new FileWrapper.Document(inputFile);
     }
 
     public static void writeFileContents(@NonNull Context context ,
@@ -46,7 +51,7 @@ public final class FileUtil {
             }
         } catch (IOException ex) {
             // TODO: 04.12.2024 Add logger
-//            Log.e(TAG,"Failed to save the game state", ex);
+            Log.e("FileUtil" , "Error reading file: " + uriContent , ex);
         }
 
     }
