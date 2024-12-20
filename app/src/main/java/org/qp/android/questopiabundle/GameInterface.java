@@ -1,5 +1,7 @@
 package org.qp.android.questopiabundle;
 
+import android.net.Uri;
+
 import org.qp.android.questopiabundle.lib.LibRefIRequest;
 import org.qp.android.questopiabundle.lib.LibWindowType;
 
@@ -7,7 +9,7 @@ public interface GameInterface {
 
     AudioPlayer getAudioPlayer();
 
-    HostApplication getHostApplication();
+    void doChangeCurrGameDir(Uri newGameDirUri);
 
     void doRefresh(LibRefIRequest request);
 
