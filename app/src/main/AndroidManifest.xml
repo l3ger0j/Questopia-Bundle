@@ -21,7 +21,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="org.qp.intent.action.PICK_PLUGIN"/>
-                <action android:name="org.qp.android.questopiabundle.ENGINE_PLUGIN" />
+                <action android:name="org.qp.android.plugin.ENGINE_PLUGIN" />
                 <category android:name="org.qp.intent.category.ADD_PLUGIN"/>
             </intent-filter>
         </service>
