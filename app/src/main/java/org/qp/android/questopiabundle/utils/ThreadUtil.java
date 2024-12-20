@@ -2,7 +2,6 @@ package org.qp.android.questopiabundle.utils;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
 public final class ThreadUtil {
 
@@ -26,10 +25,8 @@ public final class ThreadUtil {
      * @return <code>true</code> if the current thread is the main one, otherwise <code>false</code>
      */
     public static boolean isMainThread() {
-        Log.d("QSP", Thread.currentThread().getName());
-//        Thread.currentThread().equals(Looper.getMainLooper().getThread());
         // TODO: 08.12.2024 Refactor this. The service doesn't have a main thread!
-        return true;
+        return Thread.currentThread().equals(Looper.getMainLooper().getThread());
     }
 
     /**
