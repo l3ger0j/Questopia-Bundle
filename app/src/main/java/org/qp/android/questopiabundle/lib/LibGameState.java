@@ -4,8 +4,8 @@ import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import org.qp.android.questopiabundle.dto.lib.LibListItem;
-import org.qp.android.questopiabundle.dto.lib.LibMenuItem;
+import org.qp.android.questopiabundle.dto.LibListItem;
+import org.qp.android.questopiabundle.dto.LibMenuItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,9 +28,8 @@ public class LibGameState implements Parcelable {
     public boolean gameRunning;
     public long gameId;
     public String gameTitle;
-    public Uri gameDir;
-    public Uri gameFile;
-    public String gameFileFullPath;
+    public Uri gameDirUri;
+    public Uri gameFileUri;
     public String mainDesc;
     public String varsDesc;
     public List<LibListItem> actionsList = new ArrayList<>();
@@ -48,9 +47,8 @@ public class LibGameState implements Parcelable {
         gameRunning = in.readByte() != 0;
         gameId = in.readLong();
         gameTitle = in.readString();
-        gameDir = in.readParcelable(Uri.class.getClassLoader());
-        gameFile = in.readParcelable(Uri.class.getClassLoader());
-        gameFileFullPath = in.readString();
+        gameDirUri = in.readParcelable(Uri.class.getClassLoader());
+        gameFileUri = in.readParcelable(Uri.class.getClassLoader());
         mainDesc = in.readString();
         varsDesc = in.readString();
         in.readTypedList(actionsList, LibListItem.CREATOR);
@@ -64,9 +62,8 @@ public class LibGameState implements Parcelable {
         dest.writeByte((byte) (gameRunning ? 1 : 0));
         dest.writeLong(gameId);
         dest.writeString(gameTitle);
-        dest.writeParcelable(gameDir, flags);
-        dest.writeParcelable(gameFile, flags);
-        dest.writeString(gameFileFullPath);
+        dest.writeParcelable(gameDirUri, flags);
+        dest.writeParcelable(gameFileUri, flags);
         dest.writeString(mainDesc);
         dest.writeString(varsDesc);
         dest.writeTypedList(actionsList);
@@ -84,9 +81,8 @@ public class LibGameState implements Parcelable {
         gameRunning = false;
         gameId = 0L;
         gameTitle = "";
-        gameDir = Uri.EMPTY;
-        gameFile = Uri.EMPTY;
-        gameFileFullPath = "";
+        gameDirUri = Uri.EMPTY;
+        gameFileUri = Uri.EMPTY;
         mainDesc = "";
         varsDesc = "";
         actionsList = new ArrayList<>();
