@@ -3,7 +3,7 @@ package org.qp.android.questopiabundle.lib;
 /**
  * Methods of this interface are called from native code. See <code>android_callbacks.c</code>.
  */
-public interface LibICallbacks {
+public interface LibCallbacks {
 
     void RefreshInt();
 
