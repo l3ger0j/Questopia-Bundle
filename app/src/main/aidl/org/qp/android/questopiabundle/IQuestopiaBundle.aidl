@@ -1,6 +1,7 @@
 package org.qp.android.questopiabundle;
 
 import android.net.Uri;
+import org.qp.android.questopiabundle.LibResult;
 import org.qp.android.questopiabundle.AsyncCallbacks;
 
 interface IQuestopiaBundle {
@@ -12,8 +13,11 @@ interface IQuestopiaBundle {
     // Plugin part
     void startNativeLib();
     void stopNativeLib();
+
     void runGameIntoLib(long gameId, String gameTitle, in Uri gameDirUri, in Uri gameFileUri);
     void onActionClicked(int index);
+    void onObjectClicked(int index);
+    void doLibRequest(in LibResult gameRequest, String codeToExec, in Uri fileUri);
 
     void sendAsync(AsyncCallbacks callbacks);
 }

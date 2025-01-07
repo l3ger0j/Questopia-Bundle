@@ -19,7 +19,7 @@ public class LibResult<T extends Parcelable> implements Parcelable {
 
     public T value;
 
-    public LibResult(T value, Class<T> classType) {
+    public LibResult(T value) {
         this.value = value;
     }
 

@@ -1,9 +1,11 @@
 package org.qp.android.questopiabundle.lib;
 
 import static org.qp.android.questopiabundle.utils.FileUtil.documentWrap;
+import static org.qp.android.questopiabundle.utils.FileUtil.findOrCreateFile;
 import static org.qp.android.questopiabundle.utils.FileUtil.fromFullPath;
 import static org.qp.android.questopiabundle.utils.FileUtil.fromRelPath;
 import static org.qp.android.questopiabundle.utils.FileUtil.getFileContents;
+import static org.qp.android.questopiabundle.utils.FileUtil.isWritableFile;
 import static org.qp.android.questopiabundle.utils.FileUtil.writeFileContents;
 import static org.qp.android.questopiabundle.utils.HtmlUtil.getSrcDir;
 import static org.qp.android.questopiabundle.utils.HtmlUtil.isContainsHtmlTags;
@@ -25,8 +27,8 @@ import androidx.annotation.NonNull;
 import androidx.documentfile.provider.DocumentFile;
 
 import com.anggrayudi.storage.file.DocumentFileCompat;
+import com.anggrayudi.storage.file.MimeType;
 
-import org.qp.android.questopiabundle.AudioPlayer;
 import org.qp.android.questopiabundle.GameInterface;
 import org.qp.android.questopiabundle.dto.LibActionData;
 import org.qp.android.questopiabundle.dto.LibErrorData;
@@ -61,10 +63,6 @@ public class LibProxyImpl implements LibIProxy, LibCallbacks {
 
     private DocumentFile getCurGameDir() {
         return DocumentFileCompat.fromUri(context, gameState.gameDirUri);
-    }
-
-    public AudioPlayer getAudioPlayer() {
-        return gameInterface.getAudioPlayer();
     }
 
     private void runOnQspThread(final Runnable runnable) {
@@ -123,7 +121,7 @@ public class LibProxyImpl implements LibIProxy, LibCallbacks {
                 desc);
         Log.e(TAG, message);
         if (gameInterface != null) {
-            gameInterface.showDialog(GameInterface.TypeDialog.DIALOG_ERROR, message);
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, message);
         }
     }
 
@@ -289,7 +287,7 @@ public class LibProxyImpl implements LibIProxy, LibCallbacks {
 
     private void doRunGame(final long id, final String title, final Uri dir, final Uri file) {
         gameInterface.doWithCounterDisabled(() -> {
-            getAudioPlayer().closeAllFiles();
+            gameInterface.closeAllFiles();
             gameState.reset();
             gameState.gameRunning = true;
             gameState.gameId = id;
@@ -353,11 +351,11 @@ public class LibProxyImpl implements LibIProxy, LibCallbacks {
 
     @Override
     public void onInputAreaClicked() {
-        final var inter = gameInterface;
-        if (inter == null) return;
-
+        if (gameInterface == null) return;
         runOnQspThread(() -> {
-            var input = inter.showInputDialog("userInputTitle");
+            var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle");
+            if (doShow == null) return;
+            var input = doShow.outTextValue;
             nativeMethods.QSPSetInputStrText(input);
             if (!nativeMethods.QSPExecUserInput(true)) {
                 showLastQspError();
@@ -367,11 +365,11 @@ public class LibProxyImpl implements LibIProxy, LibCallbacks {
 
     @Override
     public void onUseExecutorString() {
-        final var inter = gameInterface;
-        if (inter == null) return;
-
+        if (gameInterface == null) return;
         runOnQspThread(() -> {
-            var input = inter.showExecutorDialog("execStringTitle");
+            var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle");
+            if (doShow == null) return;
+            var input = doShow.outTextValue;
             if (!nativeMethods.QSPExecString(input, true)) {
                 showLastQspError();
             }
@@ -478,7 +476,7 @@ public class LibProxyImpl implements LibIProxy, LibCallbacks {
             var picFile = fromFullPath(context, path, getCurGameDir());
             if (picFile == null) return;
             var pathToPic = String.valueOf(picFile.getUri());
-            inter.showDialog(GameInterface.TypeDialog.DIALOG_PICTURE, pathToPic);
+            inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, pathToPic);
         }
     }
 
@@ -493,47 +491,55 @@ public class LibProxyImpl implements LibIProxy, LibCallbacks {
     public void ShowMessage(String message) {
         var inter = gameInterface;
         if (inter == null) return;
-        inter.showDialog(GameInterface.TypeDialog.DIALOG_MESSAGE, message);
+        inter.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, message);
     }
 
     @Override
     public void PlayFile(String path, int volume) {
+        if (gameInterface == null) return;
         if (isNotEmpty(path)) {
-            getAudioPlayer().playFile(path, volume);
+            gameInterface.playFile(path, volume);
         }
     }
 
     @Override
     public boolean IsPlayingFile(final String path) {
-        return isNotEmpty(path) && getAudioPlayer().isPlayingFile(path);
+        if (gameInterface == null) return false;
+        return isNotEmpty(path) && gameInterface.isPlayingFile(path);
     }
 
     @Override
     public void CloseFile(String path) {
+        if (gameInterface == null) return;
         if (isNotEmpty(path)) {
-            getAudioPlayer().closeFile(path);
+            gameInterface.closeFile(path);
         } else {
-            getAudioPlayer().closeAllFiles();
+            gameInterface.closeAllFiles();
         }
     }
 
     @Override
     public void OpenGame(String filename) {
-        var inter = gameInterface;
-        if (inter == null) return;
-
         if (filename == null) {
-            inter.showLoadGamePopup();
+            if (gameInterface == null) return;
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null);
         } else {
             try {
                 var saveFile = fromFullPath(context, filename, getCurGameDir());
-                if (saveFile == null) {
+                if (!isWritableFile(context, saveFile)) {
+                    if (gameInterface != null) {
+                        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found");
+                    }
                     Log.e(TAG , "Save file not found");
                     return;
                 }
-                var saveFileUri = saveFile.getUri();
-                inter.doWithCounterDisabled(() -> loadGameState(saveFileUri));
+                if (gameInterface != null) {
+                    gameInterface.doWithCounterDisabled(() -> loadGameState(saveFile.getUri()));
+                }
             } catch (Exception e) {
+                if (gameInterface != null) {
+                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, e.toString());
+                }
                 Log.e(TAG , "Error: ", e);
             }
         }
@@ -542,24 +548,28 @@ public class LibProxyImpl implements LibIProxy, LibCallbacks {
     @Override
     public void SaveGame(String filename) {
         if (filename == null) {
-            var inter = gameInterface;
-            if (inter == null) return;
-            inter.showSaveGamePopup();
+            if (gameInterface == null) return;
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null);
         } else {
-            // TODO: 27.11.2024 Replace to request
-//            var file = new File(filename);
-//            var saveFile = findOrCreateFile(context, getCurGameDir(), file.getName(), MimeType.TEXT);
-//            if (saveFile != null) {
-//                saveGameState(saveFile.getUri());
-//            } else {
-//                Log.e(TAG , "Error access dir");
-//            }
+            var file = new File(filename);
+            var saveFile = findOrCreateFile(context, getCurGameDir(), file.getName(), MimeType.TEXT);
+            if (isWritableFile(context, saveFile)) {
+                saveGameState(saveFile.getUri());
+            } else {
+                if (gameInterface != null) {
+                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir");
+                }
+                Log.e(TAG, "Error access dir");
+            }
         }
     }
 
     @Override
     public String InputBox(String prompt) {
-        return gameInterface != null ? gameInterface.showInputDialog(prompt) : null;
+        if (gameInterface == null) return "";
+        var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, prompt);
+        if (doShow == null) return "";
+        return doShow.outTextValue;
     }
 
     @Override
@@ -583,9 +593,10 @@ public class LibProxyImpl implements LibIProxy, LibCallbacks {
 
     @Override
     public void ShowMenu() {
-        var inter = gameInterface;
-        if (inter == null) return;
-        int result = inter.showMenu();
+        if (gameInterface == null) return;
+        var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_MENU, null);
+        if (doShow == null) return;
+        int result = doShow.outNumValue;
         if (result != -1) {
             nativeMethods.QSPSelectMenuItem(result);
         }
@@ -607,10 +618,9 @@ public class LibProxyImpl implements LibIProxy, LibCallbacks {
 
     @Override
     public void ShowWindow(int type, boolean isShow) {
-        var inter = gameInterface;
-        if (inter == null) return;
-        var windowType = LibWindowType.values()[type];
-        inter.showWindow(windowType, isShow);
+        if (gameInterface == null) return;
+        var windowType = LibTypeWindow.values()[type];
+        gameInterface.changeVisWindow(windowType, isShow);
     }
 
     @Override

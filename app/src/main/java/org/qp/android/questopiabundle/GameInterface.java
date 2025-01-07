@@ -3,29 +3,26 @@ package org.qp.android.questopiabundle;
 import android.net.Uri;
 
 import org.qp.android.questopiabundle.lib.LibRefIRequest;
-import org.qp.android.questopiabundle.lib.LibWindowType;
+import org.qp.android.questopiabundle.lib.LibTypeDialog;
+import org.qp.android.questopiabundle.lib.LibTypeWindow;
 
 public interface GameInterface {
 
-    AudioPlayer getAudioPlayer();
+    boolean isPlayingFile(String filePath);
+
+    void closeAllFiles();
+
+    void closeFile(String filePath);
+
+    void playFile(String path, int volume);
 
     void doChangeCurrGameDir(Uri newGameDirUri);
 
     void doRefresh(LibRefIRequest request);
 
-    void showDialog(TypeDialog dialog, String inputMessage);
+    LibDialogRetValue showLibDialog(LibTypeDialog dialog, String inputString);
 
-    void showWindow(LibWindowType type, boolean show);
-
-    String showInputDialog(String prompt);
-
-    String showExecutorDialog(String prompt);
-
-    int showMenu();
-
-    void showLoadGamePopup();
-
-    void showSaveGamePopup();
+    void changeVisWindow(LibTypeWindow type, boolean show);
 
     /**
      * Set the counter location processing interval to <code>delayMillis</code> milliseconds.
@@ -37,9 +34,4 @@ public interface GameInterface {
      */
     void doWithCounterDisabled(Runnable runnable);
 
-    enum TypeDialog {
-        DIALOG_ERROR,
-        DIALOG_PICTURE,
-        DIALOG_MESSAGE
-    }
 }

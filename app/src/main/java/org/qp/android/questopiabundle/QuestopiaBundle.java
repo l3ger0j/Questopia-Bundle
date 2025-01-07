@@ -12,14 +12,15 @@ import androidx.annotation.Nullable;
 
 import com.anggrayudi.storage.file.DocumentFileCompat;
 
-import org.qp.android.questopiabundle.lib.LibGameState;
+import org.qp.android.questopiabundle.lib.LibGameRequest;
 import org.qp.android.questopiabundle.lib.LibProxyImpl;
 import org.qp.android.questopiabundle.lib.LibRefIRequest;
-import org.qp.android.questopiabundle.lib.LibWindowType;
+import org.qp.android.questopiabundle.lib.LibTypeDialog;
+import org.qp.android.questopiabundle.lib.LibTypeWindow;
 
 public class QuestopiaBundle extends Service implements GameInterface {
 
-    private final LibProxyImpl libProxy = new LibProxyImpl(this);
+    private LibProxyImpl libProxy;
     private AsyncCallbacks callbacks;
 
     private final Handler counterHandler = new Handler();
@@ -32,30 +33,45 @@ public class QuestopiaBundle extends Service implements GameInterface {
     };
     private int counterInterval = 500;
 
+    @Override
+    public boolean isPlayingFile(String filePath) {
+        try {
+            if (callbacks == null) return false;
+            return callbacks.isPlayingFile(filePath);
+        } catch (Exception e) {
+            Log.e(this.getClass().getSimpleName(), "Error", e);
+            return false;
+        }
+    }
 
     @Override
-    public AudioPlayer getAudioPlayer() {
-        return new AudioPlayer() {
-            @Override
-            public boolean isPlayingFile(String filePath) {
-                return true;
-            }
+    public void closeAllFiles() {
+        try {
+            if (callbacks == null) return;
+            callbacks.closeAllFiles();
+        } catch (Exception e) {
+            Log.e(this.getClass().getSimpleName(), "Error", e);
+        }
+    }
 
-            @Override
-            public void closeAllFiles() {
+    @Override
+    public void closeFile(String filePath) {
+        try {
+            if (callbacks == null) return;
+            callbacks.closeFile(filePath);
+        } catch (Exception e) {
+            Log.e(this.getClass().getSimpleName(), "Error", e);
+        }
+    }
 
-            }
-
-            @Override
-            public void closeFile(String filePath) {
-
-            }
-
-            @Override
-            public void playFile(String path, int volume) {
-
-            }
-        };
+    @Override
+    public void playFile(String path, int volume) {
+        try {
+            if (callbacks == null) return;
+            callbacks.playFile(path, volume);
+        } catch (Exception e) {
+            Log.e(this.getClass().getSimpleName(), "Error", e);
+        }
     }
 
     public void setCallback() {
@@ -80,52 +96,48 @@ public class QuestopiaBundle extends Service implements GameInterface {
     public void doRefresh(LibRefIRequest request) {
         try {
             if (callbacks == null) return;
-            callbacks.sendLibRef(new LibResult<>(request, LibRefIRequest.class));
-            callbacks.sendLibGameState(new LibResult<>(libProxy.getGameState(), LibGameState.class));
+            callbacks.sendLibRef(new LibResult<>(request));
+            callbacks.sendLibGameState(new LibResult<>(libProxy.getGameState()));
         } catch (Exception e) {
             Log.e("QuestopiaBundle", "Error", e);
         }
     }
 
     @Override
-    public void showDialog(TypeDialog dialog, String inputMessage) {
-        Log.d("QuestopiaBundle", String.valueOf(inputMessage));
-    }
+    public LibDialogRetValue showLibDialog(LibTypeDialog dialog, String inputMessage) {
+        var wrap = new LibDialogRetValue();
 
-    @Override
-    public void showWindow(LibWindowType type, boolean show) {
+        if (callbacks == null) {
+            if (dialog == LibTypeDialog.DIALOG_MENU) {
+                wrap.outNumValue = -1;
+            } else {
+                wrap.outTextValue = "";
+            }
+            return wrap;
+        }
 
-    }
-
-    @Override
-    public String showInputDialog(String prompt) {
-        if (callbacks == null) return "0";
         try {
-            return callbacks.doOnShowInputDialog(prompt);
+            return callbacks.doOnShowDialog(new LibResult<>(dialog), inputMessage);
         } catch (RemoteException e) {
             Log.e("QuestopiaBundle", "Error", e);
         }
-        return "0";
+
+        if (dialog == LibTypeDialog.DIALOG_MENU) {
+            wrap.outNumValue = -1;
+        } else {
+            wrap.outTextValue = "";
+        }
+        return wrap;
     }
 
     @Override
-    public String showExecutorDialog(String prompt) {
-        return "";
-    }
-
-    @Override
-    public int showMenu() {
-        return -1;
-    }
-
-    @Override
-    public void showLoadGamePopup() {
-
-    }
-
-    @Override
-    public void showSaveGamePopup() {
-
+    public void changeVisWindow(LibTypeWindow type, boolean show) {
+        if (callbacks == null) return;
+        try {
+            callbacks.doChangeVisWindow(new LibResult<>(type), show);
+        } catch (RemoteException e) {
+            Log.e("QuestopiaBundle", "Error", e);
+        }
     }
 
     @Override
@@ -143,8 +155,6 @@ public class QuestopiaBundle extends Service implements GameInterface {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        setCallback();
-
         return new IQuestopiaBundle.Stub() {
             @Override
             public String versionPlugin() throws RemoteException {
@@ -163,6 +173,9 @@ public class QuestopiaBundle extends Service implements GameInterface {
 
             @Override
             public void startNativeLib() throws RemoteException {
+                libProxy = new LibProxyImpl(QuestopiaBundle.this);
+                setCallback();
+
                 libProxy.setGameInterface(QuestopiaBundle.this);
                 libProxy.startLibThread();
             }
@@ -171,6 +184,8 @@ public class QuestopiaBundle extends Service implements GameInterface {
             public void stopNativeLib() throws RemoteException {
                 libProxy.setGameInterface(null);
                 libProxy.stopLibThread();
+                libProxy = null;
+
                 stopSelf();
             }
 
@@ -190,6 +205,24 @@ public class QuestopiaBundle extends Service implements GameInterface {
             }
 
             @Override
+            public void onObjectClicked(int index) throws RemoteException {
+                libProxy.onObjectSelected(index);
+            }
+
+            @Override
+            public void doLibRequest(LibResult gameRequest, String codeToExec, Uri fileUri) throws RemoteException {
+                var libGameReq = (LibGameRequest) gameRequest.value;
+                switch (libGameReq) {
+                    case LOAD_FILE -> doWithCounterDisabled(() -> libProxy.loadGameState(fileUri));
+                    case SAVE_FILE -> libProxy.saveGameState(fileUri);
+                    case USE_EXECUTOR -> libProxy.onUseExecutorString();
+                    case USE_INPUT -> libProxy.onInputAreaClicked();
+                    case RESTART_GAME -> libProxy.restartGame();
+                    case EXECUTE_CODE -> libProxy.execute(codeToExec);
+                }
+            }
+
+            @Override
             public void sendAsync(AsyncCallbacks callbacks) throws RemoteException {
                 QuestopiaBundle.this.callbacks = callbacks;
             }
@@ -199,6 +232,7 @@ public class QuestopiaBundle extends Service implements GameInterface {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        libProxy = null;
         removeCallback();
     }
 }
