@@ -5,6 +5,8 @@ import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
 
+import com.libqsp.jni.QSPLib;
+
 import java.util.Objects;
 
 public class LibListItem implements Parcelable {
@@ -27,6 +29,11 @@ public class LibListItem implements Parcelable {
     public LibListItem() {
         text = "";
         pathToImage = "";
+    }
+
+    public LibListItem(QSPLib.ListItem item) {
+        this.pathToImage = item.image;
+        this.text = item.name;
     }
 
     protected LibListItem(Parcel in) {
