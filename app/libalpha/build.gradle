@@ -1,20 +1,17 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.library)
 }
 
 android {
-    namespace 'org.qp.android.questopiabundle'
+    namespace 'org.qp.android.questopiabundle.libalpha'
     compileSdk 35
 
     defaultConfig {
-        applicationId "org.qp.android.questopiabundle"
         minSdk 26
-        targetSdk 34
-        versionCode 100000
-        versionName "0.0.1"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        externalNativeBuild{
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+        externalNativeBuild {
             cmake {
                 arguments "-DBUILD_JAVA=1"
                 cFlags "-DANDROID"
@@ -36,15 +33,9 @@ android {
 
     externalNativeBuild {
         cmake {
-            path file('src/main/jni/CMakeLists.txt')
-            version '3.22.1'
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.22.1"
         }
-    }
-
-    buildFeatures {
-        viewBinding true
-        buildConfig true
-        aidl true
     }
 
     ndkVersion = '27.2.12479018'
@@ -57,11 +48,6 @@ android {
 dependencies {
     implementation libs.appcompat
     implementation libs.material
-    implementation libs.constraintlayout
-
-    implementation libs.storage
-    implementation libs.jsoup
-    implementation project(':app:libalpha')
 
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
