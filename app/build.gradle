@@ -13,13 +13,6 @@ android {
         versionCode 100000
         versionName "0.0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
-        externalNativeBuild{
-            cmake {
-                arguments "-DBUILD_JAVA=1"
-                cFlags "-DANDROID"
-            }
-        }
     }
 
     buildTypes {
@@ -34,22 +27,10 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    externalNativeBuild {
-        cmake {
-            path file('src/main/jni/CMakeLists.txt')
-            version '3.22.1'
-        }
-    }
-
     buildFeatures {
         viewBinding true
         buildConfig true
         aidl true
-    }
-
-    ndkVersion = '27.2.12479018'
-    lint {
-        abortOnError false
     }
 
 }
