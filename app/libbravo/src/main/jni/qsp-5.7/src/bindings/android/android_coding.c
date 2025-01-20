@@ -162,6 +162,11 @@ QSP_CHAR *qspC2W(char *src)
 	return dst;
 }
 
+jstring qspToJVMString(JNIEnv *env, QSP_CHAR *str)
+{
+	return (*env)->NewString(env, (jchar *)str, qspStrLen(str));
+}
+
 char *qspToSysString(QSP_CHAR *s)
 {
 	return qspW2C(s);

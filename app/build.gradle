@@ -36,13 +36,15 @@ android {
 }
 
 dependencies {
+    implementation project(':app:libalpha')
+    implementation project(':app:libbravo')
+
     implementation libs.appcompat
     implementation libs.material
     implementation libs.constraintlayout
 
     implementation libs.storage
     implementation libs.jsoup
-    implementation project(':app:libalpha')
 
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
