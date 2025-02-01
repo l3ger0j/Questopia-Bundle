@@ -40,7 +40,7 @@ QSP_BOOL qspIsVarsDescChanged = QSP_FALSE;
 QSP_BOOL qspCurIsShowVars = QSP_TRUE;
 QSP_BOOL qspCurIsShowInput = QSP_TRUE;
 
-static unsigned int qspURand();
+INLINE unsigned int qspURand();
 
 void qspPrepareExecution()
 {
@@ -94,7 +94,7 @@ void qspSetSeed(unsigned int seed)
 	qspRandZ = qspURand();
 }
 
-static unsigned int qspURand()
+INLINE unsigned int qspURand()
 {
 	if (--qspRandI < 0) qspRandI = 54;
 	if (--qspRandJ < 0) qspRandJ = 54;

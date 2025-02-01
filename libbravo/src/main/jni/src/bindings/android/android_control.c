@@ -216,8 +216,15 @@ JNIEXPORT jobject JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_QS
 		qspImgFileName = qspActName = 0;
 	}
 
-	jstring actName = qspToJVMString(env, qspActName);
-	jstring actImg = qspToJVMString(env, qspImgFileName);
+	jstring actName = NULL;
+	if (qspActName != NULL) {
+		actName = qspToJVMString(env, qspActName);
+	}
+
+	jstring actImg = NULL;
+	if (qspImgFileName != NULL) {
+		actImg = qspToJVMString(env, qspImgFileName);
+	}
 
 	if (ndkListItemClass == 0)
 		return 0;
@@ -289,21 +296,28 @@ JNIEXPORT jint JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_QSPGe
 /* Object data with the specified index */
 JNIEXPORT jobject JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_QSPGetObjectData(JNIEnv *env, jobject this, jint ind)
 {
-	QSP_CHAR *ndkImgFileName;
-	QSP_CHAR *ndkObjName;
+	QSP_CHAR *qspImgFileName;
+	QSP_CHAR *qspObjName;
 
 	if (ind >= 0 && ind < qspCurObjectsCount)
 	{
-		ndkImgFileName = qspCurObjects[ind].Image;
-		ndkObjName = qspCurObjects[ind].Desc;
+		qspImgFileName = qspCurObjects[ind].Image;
+		qspObjName = qspCurObjects[ind].Desc;
 	}
 	else
 	{
-		ndkImgFileName = ndkObjName = 0;
+		qspImgFileName = qspObjName = 0;
 	}
 
-	jstring objName = qspToJVMString(env, ndkObjName);
-	jstring objImg = qspToJVMString(env, ndkImgFileName);
+	jstring objName = NULL;
+	if (qspObjName != NULL) {
+		objName = qspToJVMString(env, qspObjName);
+	}
+
+	jstring objImg = NULL;
+	if (qspImgFileName != NULL) {
+		objImg = qspToJVMString(env, qspImgFileName);
+	}
 
 	if (ndkListItemClass == 0)
 		return 0;
@@ -505,7 +519,7 @@ JNIEXPORT jboolean JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_Q
 	if ((QSP_BOOL)isRefresh) qspCallRefreshInt(QSP_FALSE);
 
 	(*env)->ReleaseStringUTFChars(env, name, str);
-	return QSP_TRUE;
+	return JNI_TRUE;
 }
 
 /* Execution of the location-counter code */
@@ -515,22 +529,22 @@ JNIEXPORT jboolean JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_Q
 	{
 		qspPrepareExecution();
 		qspExecLocByVarNameWithArgs(QSP_FMT("COUNTER"), 0, 0);
-		if (qspErrorNum) return QSP_FALSE;
-		if ((QSP_BOOL)isRefresh) qspCallRefreshInt(QSP_FALSE);
+		if (qspErrorNum) return JNI_FALSE;
+		if (isRefresh) qspCallRefreshInt(QSP_FALSE);
 	}
-	return QSP_TRUE;
+	return JNI_TRUE;
 }
 
 /* Execution of the code of the input line handler location */
 JNIEXPORT jboolean JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_QSPExecUserInput(JNIEnv *env, jobject this, jboolean isRefresh)
 {
-	if (qspIsExitOnError && qspErrorNum) return QSP_FALSE;
+	if (qspIsExitOnError && qspErrorNum) return JNI_FALSE;
 	qspPrepareExecution();
-	if (qspIsDisableCodeExec) return QSP_FALSE;
+	if (qspIsDisableCodeExec) return JNI_FALSE;
 	qspExecLocByVarNameWithArgs(QSP_FMT("USERCOM"), 0, 0);
-	if (qspErrorNum) return QSP_FALSE;
-	if ((QSP_BOOL)isRefresh) qspCallRefreshInt(QSP_FALSE);
-	return QSP_TRUE;
+	if (qspErrorNum) return JNI_FALSE;
+	if (isRefresh) qspCallRefreshInt(QSP_FALSE);
+	return JNI_TRUE;
 }
 /* ------------------------------------------------------------ */
 /* Errors */
@@ -821,13 +835,13 @@ QSP_BOOL QSPOpenSavedGameFromString(const QSP_CHAR* str, QSP_BOOL isRefresh)
 /* Restarting the game */
 JNIEXPORT jboolean JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_QSPRestartGame(JNIEnv *env, jobject this, jboolean isRefresh)
 {
-	if (qspIsExitOnError && qspErrorNum) return (jboolean)QSP_FALSE;
+	if (qspIsExitOnError && qspErrorNum) return JNI_FALSE;
 	qspPrepareExecution();
-	if (qspIsDisableCodeExec) return (jboolean)QSP_FALSE;
-	qspNewGame((jboolean)QSP_TRUE);
-	if (qspErrorNum) return (jboolean)QSP_FALSE;
-	if ((QSP_BOOL)isRefresh) qspCallRefreshInt((jboolean)QSP_FALSE);
-	return (jboolean)QSP_TRUE;
+	if (qspIsDisableCodeExec) return JNI_FALSE;
+	qspNewGame(QSP_TRUE);
+	if (qspErrorNum) return JNI_FALSE;
+	if (isRefresh) qspCallRefreshInt(QSP_FALSE);
+	return JNI_TRUE;
 }
 /* ------------------------------------------------------------ */
 /* Installing CALLBACKS */
@@ -839,9 +853,6 @@ JNIEXPORT jboolean JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_Q
 /* Initialization */
 JNIEXPORT void JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_QSPInit(JNIEnv *env, jobject this)
 {
-	#ifdef _DEBUG
-		mwInit();
-	#endif
 	qspIsDebug = QSP_FALSE;
 	qspRefreshCount = qspFullRefreshCount = 0;
 	qspQstPath = qspQstFullPath = 0;
@@ -877,8 +888,8 @@ JNIEXPORT void JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_QSPIn
 	clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/libbravo/NDKLib$LibListItem");
 	ndkListItemClass = (jclass)(*env)->NewGlobalRef(env, clazz);
 
-	clazz = (*env)->FindClass(env, "com/libqsp/jni/QSPLib$ExecutionState");
-	ndkExecutionStateClass = (jclass)(*env)->NewGlobalRef(env, clazz);
+//	clazz = (*env)->FindClass(env, "org/qp/android/model/lib/QSPLib$ExecutionState");
+//	ndkExecutionStateClass = (jclass)(*env)->NewGlobalRef(env, clazz);
 
 	clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/libbravo/NDKLib$LibErrorData");
 	ndkErrorInfoClass = (jclass)(*env)->NewGlobalRef(env, clazz);
@@ -917,9 +928,6 @@ JNIEXPORT void JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_QSPDe
 	qspCreateWorld(0, 0);
 	if (qspQstPath) free(qspQstPath);
 	if (qspQstFullPath) free(qspQstFullPath);
-	#ifdef _DEBUG
-		mwTerm();
-	#endif
 
 	/* Release references */
 	(*env)->DeleteGlobalRef(env, ndkApiObject);

@@ -21,7 +21,7 @@
 	/* Android binding */
 	#ifdef _ANDROID
 		#define QSP_BINDING
-		#include "android/android.h"
+		#include "android/qsp_android.h"
 	#endif
 
 	/* Place your bindings here */

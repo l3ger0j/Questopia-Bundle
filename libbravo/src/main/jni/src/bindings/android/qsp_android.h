@@ -22,7 +22,41 @@
 	#define QSP_ANDROIDDEFINES
 
 	#ifdef _UNICODE
-		typedef char16_t QSP_CHAR;
+		#ifdef _WIN32
+			typedef wchar_t QSP_CHAR;
+			#define QSP_FMT2(x) L##x
+			#define QSP_FMT(x) QSP_FMT2(x)
+		#else
+			typedef unsigned short QSP_CHAR;
+			#define QSP_FMT2(x) u##x
+			#define QSP_FMT(x) QSP_FMT2(x)
+		#endif
+
+		#define QSP_STRCOLL qspStrsComp
+		#define QSP_CHRLWR qspToWLower
+		#define QSP_CHRUPR qspToWUpper
+		#define QSP_WCSTOMBSLEN(a) (int)wcstombs(0, a, 0)
+		#define QSP_WCSTOMBS wcstombs
+		#define QSP_MBTOSB(a) ((a) % 256)
+		#define QSP_ONIG_ENC (sizeof(QSP_CHAR) == 2 ? ONIG_ENCODING_UTF16_LE : ONIG_ENCODING_UTF32_LE)
+		#define QSP_FROM_OS_CHAR(a) qspReverseConvertUC(a, qspCP1251ToUnicodeTable)
+		#define QSP_TO_OS_CHAR(a) qspDirectConvertUC(a, qspCP1251ToUnicodeTable)
+		#define QSP_WCTOB
+		#define QSP_BTOWC
+
+		#ifdef _MSC_VER
+			#define QSP_FOPEN _wfopen
+		#else
+			#define QSP_FOPEN qspFileOpen
+		#endif
+	#else
+		#error "Non-Unicode build using Android binding is not supported"
+	#endif
+
+	#ifdef _MSC_VER
+		#define QSP_TIME _time64
+	#else
+		#define QSP_TIME time
 	#endif
 
 	typedef jmethodID QSP_CALLBACK;

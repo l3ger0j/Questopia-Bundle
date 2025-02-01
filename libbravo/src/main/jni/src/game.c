@@ -75,13 +75,13 @@ int qspCRCTable[256] =
 	0xB3667A2E, 0xC4614AB8, 0x5D681B02, 0x2A6F2B94, 0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
 };
 
-static int qspCRC(void *, int);
-static void qspOpenIncludes();
-static FILE *qspFileOpen(QSP_CHAR *, QSP_CHAR *);
-static QSP_BOOL qspCheckQuest(char **, int, QSP_BOOL);
-static QSP_BOOL qspCheckGameStatus(QSP_CHAR **, int);
+INLINE int qspCRC(void *, int);
+INLINE void qspOpenIncludes();
+INLINE FILE *qspFileOpen(QSP_CHAR *, QSP_CHAR *);
+INLINE QSP_BOOL qspCheckQuest(char **, int, QSP_BOOL);
+INLINE QSP_BOOL qspCheckGameStatus(QSP_CHAR **, int);
 
-static int qspCRC(void *data, int len)
+INLINE int qspCRC(void *data, int len)
 {
 	unsigned char *ptr;
 	int crc = 0;
@@ -116,7 +116,7 @@ void qspClearIncludes(QSP_BOOL isFirst)
 	qspCurIncLocsCount = 0;
 }
 
-static void qspOpenIncludes()
+INLINE void qspOpenIncludes()
 {
 	int i;
 	QSP_CHAR *file;
@@ -156,7 +156,7 @@ void qspNewGame(QSP_BOOL isReset)
 	qspRefreshCurLoc(QSP_TRUE, 0, 0);
 }
 
-static FILE *qspFileOpen(QSP_CHAR *fileName, QSP_CHAR *fileMode)
+INLINE FILE *qspFileOpen(QSP_CHAR *fileName, QSP_CHAR *fileMode)
 {
 	FILE *ret;
 	char *file, *mode;
@@ -168,7 +168,7 @@ static FILE *qspFileOpen(QSP_CHAR *fileName, QSP_CHAR *fileMode)
 	return ret;
 }
 
-static QSP_BOOL qspCheckQuest(char **strs, int count, QSP_BOOL isUCS2)
+INLINE QSP_BOOL qspCheckQuest(char **strs, int count, QSP_BOOL isUCS2)
 {
 	int i, ind, locsCount, actsCount;
 	QSP_BOOL isOldFormat;
@@ -297,28 +297,50 @@ void qspOpenQuestFromData(char *data, int dataSize, QSP_CHAR *fileName, QSP_BOOL
 		qspQstCRC = crc;
 		qspCurLoc = -1;
 
-		// Notify application on quest path change
-		qspCallChangeQuestPath(qspQstPath);
+		#ifdef _ANDROID
+			// Notify application on quest path change
+			qspCallChangeQuestPath(qspQstPath);
+		#endif
 	}
 }
 
 void qspOpenQuest(QSP_CHAR *fileName, QSP_BOOL isAddLocs)
 {
-	int fileSize;
+	#ifdef _ANDROID
+		int fileSize;
 
-	char *data = qspCallGetFileContents(fileName, &fileSize);
-	if (!data) {
-		qspSetError(QSP_ERR_FILENOTFOUND);
-		return;
-	}
+		char * data = qspCallGetFileContents(fileName, &fileSize);
+		if (!data) {
+			qspSetError(QSP_ERR_FILENOTFOUND);
+			return;
+		}
 
-	char *buf = (char *)malloc(fileSize + 3);
-	memcpy(buf, data, fileSize);
-	free(data);
+		char * buf = (char *)malloc(fileSize + 3);
+		memcpy(buf, data, fileSize);
+		free(data);
 
-	buf[fileSize] = buf[fileSize + 1] = buf[fileSize + 2] = 0;
-	qspOpenQuestFromData(buf, fileSize, fileName, isAddLocs);
-	free(buf);
+		buf[fileSize] = buf[fileSize + 1] = buf[fileSize + 2] = 0;
+		qspOpenQuestFromData(buf, fileSize, fileName, isAddLocs);
+		free(buf);
+	#else
+		FILE * f;
+		char * buf;
+		int fileSize;
+		if (!(f = QSP_FOPEN(fileName, QSP_FMT("rb"))))
+		{
+			qspSetError(QSP_ERR_FILENOTFOUND);
+			return;
+		}
+		fseek(f, 0, SEEK_END);
+		fileSize = ftell(f);
+		buf = (char *)malloc(fileSize + 3);
+		fseek(f, 0, SEEK_SET);
+		fread(buf, 1, fileSize, f);
+		fclose(f);
+		buf[fileSize] = buf[fileSize + 1] = buf[fileSize + 2] = 0;
+		qspOpenQuestFromData(buf, fileSize + 3, fileName, isAddLocs);
+		free(buf);
+	#endif
 }
 
 int qspSaveGameStatusToString(QSP_CHAR **buf)
@@ -418,7 +440,7 @@ void qspSaveGameStatus(QSP_CHAR *fileName)
 	fclose(f);
 }
 
-static QSP_BOOL qspCheckGameStatus(QSP_CHAR **strs, int strsCount)
+INLINE QSP_BOOL qspCheckGameStatus(QSP_CHAR **strs, int strsCount)
 {
 	int i, j, ind, count, linesCount, lastInd, temp, selAction, selObject;
 	ind = 17;

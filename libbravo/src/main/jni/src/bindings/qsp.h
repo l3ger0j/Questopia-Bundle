@@ -18,15 +18,7 @@
 #ifndef QSP_H
 	#define QSP_H
 
-	#ifdef EXPORT
-		#ifdef _WIN
-			#define QSP_EXTERN __declspec(dllexport)
-		#else
-			#define QSP_EXTERN extern
-		#endif
-	#else
-		#define QSP_EXTERN
-	#endif
+    #include "qsp_export.h"
 
 	enum
 	{
@@ -87,22 +79,16 @@
 		QSP_CALL_SLEEP, /* void func(int msecs) */
 		QSP_CALL_GETMSCOUNT, /* int func() */
 		QSP_CALL_INPUTBOX, /* void func(const QSP_CHAR *text, QSP_CHAR *buffer, int maxLen) */
+		#ifdef _ANDROID
 		QSP_CALL_GETFILECONTENT,
 		QSP_CALL_CHANGEQUESTPATH,
+		#endif
 		QSP_CALL_DUMMY
 	};
 
-	#ifdef _UNICODE
-		#define QSP_FMT2(x) u##x
-		#define QSP_FMT(x) QSP_FMT2(x)
-	#else
-		typedef char QSP_CHAR;
-		#define QSP_FMT(x) x
-	#endif
-
-	typedef int QSP_BOOL;
-
 	#define QSP_TRUE 1
 	#define QSP_FALSE 0
+
+	typedef int QSP_BOOL;
 
 #endif

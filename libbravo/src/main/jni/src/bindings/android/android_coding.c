@@ -167,6 +167,19 @@ jstring qspToJVMString(JNIEnv *env, QSP_CHAR *str)
 	return (*env)->NewString(env, (jchar *)str, qspStrLen(str));
 }
 
+QSP_CHAR qspFromJavaString(JNIEnv *env, jstring str)
+{
+//	jsize length;
+//	jchar *chars;
+//	QSP_CHAR res;
+//	length = (*env)->GetStringLength(env, str);
+//	chars = (*env)->GetStringChars(env, str, 0);
+//	res = qspGetNewText(qspC2W(chars), length);
+//	(*env)->ReleaseStringChars(env, str, chars);
+//	return res;
+	return 0;
+}
+
 char *qspToSysString(QSP_CHAR *s)
 {
 	return qspW2C(s);

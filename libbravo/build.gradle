@@ -13,7 +13,7 @@ android {
         consumerProguardFiles "consumer-rules.pro"
         externalNativeBuild {
             cmake {
-                cFlags "-fshort-wchar -D_ANDROID -D_UNICODE -DNOT_RUBY -DEXPORT"
+                cFlags "-D_ANDROID"
             }
         }
     }
