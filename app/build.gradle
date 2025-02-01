@@ -36,8 +36,8 @@ android {
 }
 
 dependencies {
-    implementation project(':app:libalpha')
-    implementation project(':app:libbravo')
+    implementation project(':libalpha')
+    implementation project(':libbravo')
 
     implementation libs.appcompat
     implementation libs.material

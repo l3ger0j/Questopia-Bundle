@@ -1,4 +1,4 @@
-package org.qp.android.libalpha;
+package org.qp.android.questopiabundle.libalpha;
 
 import org.junit.Test;
 
