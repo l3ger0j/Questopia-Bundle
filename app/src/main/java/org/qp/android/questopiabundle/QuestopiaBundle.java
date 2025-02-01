@@ -21,11 +21,12 @@ import org.qp.android.questopiabundle.lib.LibTypeWindow;
 
 public class QuestopiaBundle extends Service implements GameInterface {
 
+    private final Handler counterHandler = new Handler();
+    private final Handler counterNDKHandler = new Handler();
     private LibProxyImpl libProxy;
     private LibNDKProxyImpl libNDKProxy;
     private AsyncCallbacks callbacks;
-
-    private final Handler counterHandler = new Handler();
+    private volatile int counterInterval = 500;
     private final Runnable counterTask = new Runnable() {
         @Override
         public void run() {
@@ -33,15 +34,13 @@ public class QuestopiaBundle extends Service implements GameInterface {
             counterHandler.postDelayed(this, counterInterval);
         }
     };
-    private final Handler counterNDKHandler = new Handler();
     private final Runnable counterNDKTask = new Runnable() {
         @Override
         public void run() {
             libNDKProxy.executeCounter();
-            counterHandler.postDelayed(this, counterInterval);
+            counterNDKHandler.postDelayed(this, counterInterval);
         }
     };
-    private int counterInterval = 500;
     private int mLibVersion;
 
     @Override
@@ -168,9 +167,15 @@ public class QuestopiaBundle extends Service implements GameInterface {
 
     @Override
     public void doWithCounterDisabled(Runnable runnable) {
-        counterHandler.removeCallbacks(counterTask);
-        runnable.run();
-        counterHandler.postDelayed(counterTask , counterInterval);
+        if (mLibVersion == 570) {
+            counterNDKHandler.removeCallbacks(counterNDKTask);
+            runnable.run();
+            counterNDKHandler.postDelayed(counterNDKTask, counterInterval);
+        } else if (mLibVersion == 592) {
+            counterHandler.removeCallbacks(counterTask);
+            runnable.run();
+            counterHandler.postDelayed(counterTask, counterInterval);
+        }
     }
 
     @Nullable
@@ -234,7 +239,7 @@ public class QuestopiaBundle extends Service implements GameInterface {
                                        Uri gameDirUri,
                                        Uri gameFileUri) throws RemoteException {
                 Log.i(this.getClass().getSimpleName(), String.valueOf(DocumentFileCompat.getAccessibleAbsolutePaths(getBaseContext())));
-                Log.d(this.getClass().getSimpleName(), "Debug: "+"\nGameID|"+gameId+"\nGameTitle|"+gameTitle+"\nGameDirUri|"+gameDirUri+"\nGameFileUri|"+gameFileUri);
+                Log.d(this.getClass().getSimpleName(), "Debug: " + "\nGameID|" + gameId + "\nGameTitle|" + gameTitle + "\nGameDirUri|" + gameDirUri + "\nGameFileUri|" + gameFileUri);
                 if (mLibVersion == 570) {
                     libNDKProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri);
                 } else if (mLibVersion == 592) {
