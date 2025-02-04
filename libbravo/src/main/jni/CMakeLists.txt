@@ -7,6 +7,9 @@ include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
 include(GNUInstallDirs)
 
+set(TARGET ndkqsp PROPERTY CMAKE_C_STANDARD 90)
+set(TARGET ndkqsp PROPERTY CMAKE_C_STANDARD_REQUIRED ON)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
 
