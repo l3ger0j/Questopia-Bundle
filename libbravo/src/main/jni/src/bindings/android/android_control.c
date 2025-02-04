@@ -885,16 +885,16 @@ JNIEXPORT void JNICALL Java_org_qp_android_questopiabundle_libbravo_NDKLib_QSPIn
 	ndkApiClass = (jclass)(*env)->NewGlobalRef(env, clazz);
 	ndkApiObject = (jobject)(*env)->NewGlobalRef(env, this);
 
-	clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/libbravo/NDKLib$LibListItem");
+	clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/libbravo/NDKLib$ListItem");
 	ndkListItemClass = (jclass)(*env)->NewGlobalRef(env, clazz);
 
 //	clazz = (*env)->FindClass(env, "org/qp/android/model/lib/QSPLib$ExecutionState");
 //	ndkExecutionStateClass = (jclass)(*env)->NewGlobalRef(env, clazz);
 
-	clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/libbravo/NDKLib$LibErrorData");
+	clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/libbravo/NDKLib$ErrorData");
 	ndkErrorInfoClass = (jclass)(*env)->NewGlobalRef(env, clazz);
 
-	clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/libbravo/NDKLib$LibVarValResp");
+	clazz = (*env)->FindClass(env, "org/qp/android/questopiabundle/libbravo/NDKLib$VarValResp");
 	ndkVarValResp = (jclass)(*env)->NewGlobalRef(env, clazz);
 
 	/* Get references to callbacks */

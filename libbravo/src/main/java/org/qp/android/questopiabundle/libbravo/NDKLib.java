@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public abstract class NDKLib {
 
-    public class LibListItem {
+    public class ListItem {
         public String pathToImage;
         public String text;
 
@@ -12,15 +12,15 @@ public abstract class NDKLib {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            var that = (LibListItem) o;
+            var that = (ListItem) o;
             return Objects.equals(text, that.text)
                     && Objects.equals(pathToImage, that.pathToImage);
         }
     }
 
-    public record LibVarValResp(boolean isSuccess , String stringValue , int intValue) { }
+    public record VarValResp(boolean isSuccess , String stringValue , int intValue) { }
 
-    public record LibErrorData(String locName , int errorNum , int index , int line) { }
+    public record ErrorData(String locName , int errorNum , int index , int line) { }
 
     static {
         System.loadLibrary("ndkqsp");
