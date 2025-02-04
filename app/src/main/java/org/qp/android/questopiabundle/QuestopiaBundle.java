@@ -13,8 +13,8 @@ import androidx.annotation.Nullable;
 import com.anggrayudi.storage.file.DocumentFileCompat;
 
 import org.qp.android.questopiabundle.lib.LibGameRequest;
-import org.qp.android.questopiabundle.lib.LibNDKProxyImpl;
-import org.qp.android.questopiabundle.lib.LibProxyImpl;
+import org.qp.android.questopiabundle.lib.impl.LibBravoProxyImpl;
+import org.qp.android.questopiabundle.lib.impl.LibAlphaProxyImpl;
 import org.qp.android.questopiabundle.lib.LibRefIRequest;
 import org.qp.android.questopiabundle.lib.LibTypeDialog;
 import org.qp.android.questopiabundle.lib.LibTypeWindow;
@@ -25,6 +25,8 @@ public class QuestopiaBundle extends Service implements GameInterface {
     private final Handler counterNDKHandler = new Handler();
     private LibProxyImpl libProxy;
     private LibNDKProxyImpl libNDKProxy;
+    private LibAlphaProxyImpl libAlphaProxy;
+    private LibBravoProxyImpl libBravoProxy;
     private AsyncCallbacks callbacks;
     private volatile int counterInterval = 500;
     private final Runnable counterTask = new Runnable() {

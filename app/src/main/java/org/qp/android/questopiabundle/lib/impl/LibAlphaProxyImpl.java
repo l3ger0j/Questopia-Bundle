@@ -1,6 +1,5 @@
-package org.qp.android.questopiabundle.lib;
+package org.qp.android.questopiabundle.lib.impl;
 
-import static org.qp.android.questopiabundle.utils.FileUtil.documentWrap;
 import static org.qp.android.questopiabundle.utils.FileUtil.findOrCreateFile;
 import static org.qp.android.questopiabundle.utils.FileUtil.fromFullPath;
 import static org.qp.android.questopiabundle.utils.FileUtil.fromRelPath;
@@ -28,10 +27,15 @@ import androidx.documentfile.provider.DocumentFile;
 
 import com.anggrayudi.storage.file.DocumentFileCompat;
 import com.anggrayudi.storage.file.MimeType;
+import com.libqsp.jni.QSPLib;
 
 import org.qp.android.questopiabundle.GameInterface;
-import org.qp.android.questopiabundle.dto.LibMenuItem;
-import org.qp.android.questopiabundle.libbravo.NDKLib;
+import org.qp.android.questopiabundle.dto.LibListItem;
+import org.qp.android.questopiabundle.lib.LibGameState;
+import org.qp.android.questopiabundle.lib.LibIProxy;
+import org.qp.android.questopiabundle.lib.LibRefIRequest;
+import org.qp.android.questopiabundle.lib.LibTypeDialog;
+import org.qp.android.questopiabundle.lib.LibTypeWindow;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -39,7 +43,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
+public class LibAlphaProxyImpl extends QSPLib implements LibIProxy {
     private final String TAG = "LibProxyImpl";
 
     private final ReentrantLock libLock = new ReentrantLock();
@@ -52,7 +56,7 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     private volatile long lastMsCountCallTime;
     private GameInterface gameInterface;
 
-    public LibNDKProxyImpl(Context context) {
+    public LibAlphaProxyImpl(Context context) {
         this.context = context;
     }
 
@@ -84,12 +88,10 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
 
     private boolean loadGameWorld() {
         var gameFileUri = gameState.gameFileUri;
-        var gameFile = DocumentFileCompat.fromUri(context, gameState.gameFileUri);
-        var gameFileFullPath = documentWrap(gameFile).getAbsolutePath(context);
         var gameData = getFileContents(context, gameFileUri);
         if (gameData == null) return false;
 
-        if (!QSPLoadGameWorldFromData(gameData, gameData.length, gameFileFullPath)) {
+        if (!loadGameWorldFromData(gameData, true)) {
             showLastQspError();
             Log.d("QSP", "World is not loaded!");
             return false;
@@ -99,16 +101,16 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     }
 
     private void showLastQspError() {
-        var errorData = (LibErrorData) QSPGetLastErrorData();
-        var locName = getStringOrEmpty(errorData.locName());
-        var desc = getStringOrEmpty(QSPGetErrorDesc(errorData.errorNum()));
+        var errorData = getLastErrorData();
+        var locName = getStringOrEmpty(errorData.locName);
+        var desc = getStringOrEmpty(getErrorDesc(errorData.errorNum));
         final var message = String.format(
                 Locale.getDefault(),
                 "Location: %s\nAction: %d\nLine: %d\nError number: %d\nDescription: %s",
                 locName,
-                errorData.index(),
-                errorData.line(),
-                errorData.errorNum(),
+                errorData.actIndex,
+                errorData.intLineNum,
+                errorData.errorNum,
                 desc);
         Log.e(TAG, errorData.toString());
         if (gameInterface != null) {
@@ -125,32 +127,34 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
         var config = gameState.interfaceConfig;
         boolean changed = false;
 
-        var htmlResult = (LibVarValResp) QSPGetVarValues("USEHTML", 0);
-        if (htmlResult.isSuccess()) {
-            boolean useHtml = htmlResult.intValue() != 0;
-            if (config.useHtml != useHtml) {
-                config.useHtml = useHtml;
-                changed = true;
-            }
-        }
-        var fSizeResult = (LibVarValResp) QSPGetVarValues("FSIZE", 0);
-        if (fSizeResult.isSuccess() && config.fontSize != fSizeResult.intValue()) {
-            config.fontSize = fSizeResult.intValue();
+        var htmlResult = getNumVarValue("USEHTML", 0);
+        var useHtml = htmlResult != 0;
+        if (config.useHtml != useHtml) {
+            config.useHtml = useHtml;
             changed = true;
         }
-        var bColorResult = (LibVarValResp) QSPGetVarValues("BCOLOR", 0);
-        if (bColorResult.isSuccess() && config.backColor != bColorResult.intValue()) {
-            config.backColor = bColorResult.intValue();
+
+        var fSizeResult = getNumVarValue("FSIZE", 0);
+        if (config.fontSize != fSizeResult) {
+            config.fontSize = fSizeResult;
             changed = true;
         }
-        var fColorResult = (LibVarValResp) QSPGetVarValues("FCOLOR", 0);
-        if (fColorResult.isSuccess() && config.fontColor != fColorResult.intValue()) {
-            config.fontColor = fColorResult.intValue();
+
+        var bColorResult = getNumVarValue("BCOLOR", 0);
+        if (config.backColor != bColorResult) {
+            config.backColor = bColorResult;
             changed = true;
         }
-        var lColorResult = (LibVarValResp) QSPGetVarValues("LCOLOR", 0);
-        if (lColorResult.isSuccess() && config.linkColor != lColorResult.intValue()) {
-            config.linkColor = lColorResult.intValue();
+
+        var fColorResult = getNumVarValue("FCOLOR", 0);
+        if (config.fontColor != fColorResult) {
+            config.fontColor = fColorResult;
+            changed = true;
+        }
+
+        var lColorResult = getNumVarValue("LCOLOR", 0);
+        if (config.linkColor != lColorResult) {
+            config.linkColor = lColorResult;
             changed = true;
         }
 
@@ -158,62 +162,50 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     }
 
     @NonNull
-    private ArrayList<org.qp.android.questopiabundle.dto.LibListItem> getActionsList() {
-        var actions = new ArrayList<org.qp.android.questopiabundle.dto.LibListItem>();
-        var count = QSPGetActionsCount();
-
-        for (int i = 0; i < count; ++i) {
-            var action = new org.qp.android.questopiabundle.dto.LibListItem();
-            var actionResult = (LibListItem) QSPGetActionData(i);
-            var curGameDir = getCurGameDir();
-
-            if (actionResult.pathToImage == null) {
-                action.pathToImage = null;
-            } else {
-                var tempPath = normalizeContentPath(getFilename(actionResult.pathToImage));
+    private ArrayList<LibListItem> getActionsList() {
+        var actions = new ArrayList<LibListItem>();
+        var curGameDir = getCurGameDir();
+        for (var element : getActions()) {
+            var newElement = new LibListItem(element);
+            if (isNotEmptyOrBlank(newElement.pathToImage)) {
+                var tempPath = normalizeContentPath(getFilename(newElement.pathToImage));
                 var fileFromPath = fromRelPath(context, tempPath, curGameDir, false);
                 if (fileFromPath != null) {
-                    action.pathToImage = String.valueOf(fileFromPath.getUri());
+                    newElement.pathToImage = String.valueOf(fileFromPath.getUri());
                 } else {
-                    action.pathToImage = null;
+                    newElement.pathToImage = null;
                 }
             }
-            action.text = gameState.interfaceConfig.useHtml
-                    ? removeHtmlTags(actionResult.text)
-                    : actionResult.text;
-
-            actions.add(action);
+            newElement.text = gameState.interfaceConfig.useHtml
+                    ? removeHtmlTags(newElement.text)
+                    : newElement.text;
+            actions.add(newElement);
         }
-
         return actions;
     }
 
     @NonNull
-    private ArrayList<org.qp.android.questopiabundle.dto.LibListItem> getObjectsList() {
-        var objects = new ArrayList<org.qp.android.questopiabundle.dto.LibListItem>();
-        var count = QSPGetObjectsCount();
+    private ArrayList<LibListItem> getObjectsList() {
+        var objects = new ArrayList<LibListItem>();
+        var curGameDir = getCurGameDir();
 
-        for (int i = 0; i < count; i++) {
-            var object = new org.qp.android.questopiabundle.dto.LibListItem();
-            var objectResult = (LibListItem) QSPGetObjectData(i);
-            var curGameDir = getCurGameDir();
-
-            if (objectResult.text.contains("<img")) {
-                if (isContainsHtmlTags(objectResult.text)) {
-                    var tempPath = getSrcDir(objectResult.text);
+        for (var element : getObjects()) {
+            var newElement = new LibListItem(element);
+            if (newElement.text.contains("<img")) {
+                if (isContainsHtmlTags(newElement.text)) {
+                    var tempPath = getSrcDir(newElement.text);
                     var fileFromPath = fromRelPath(context, tempPath, curGameDir, false);
-                    object.pathToImage = String.valueOf(fileFromPath);
+                    newElement.pathToImage = String.valueOf(fileFromPath);
                 } else {
-                    var fileFromPath = fromRelPath(context, objectResult.text, curGameDir, false);
-                    object.pathToImage = String.valueOf(fileFromPath);
+                    var fileFromPath = fromRelPath(context, newElement.text, curGameDir, false);
+                    newElement.pathToImage = String.valueOf(fileFromPath);
                 }
             } else {
-                object.pathToImage = objectResult.pathToImage;
-                object.text = gameState.interfaceConfig.useHtml
-                        ? removeHtmlTags(objectResult.text)
-                        : objectResult.text;
+                newElement.text = gameState.interfaceConfig.useHtml
+                        ? removeHtmlTags(newElement.text)
+                        : newElement.text;
             }
-            objects.add(object);
+            objects.add(newElement);
         }
 
         return objects;
@@ -225,14 +217,14 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
         libThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    QSPInit();
+                    init();
                     if (Looper.myLooper() == null) {
                         Looper.prepare();
                     }
                     libHandler = new Handler(Looper.myLooper());
                     libThreadInit = true;
                     Looper.loop();
-                    QSPDeInit();
+                    terminate();
                 } catch (Throwable t) {
                     Log.e(TAG, "lib thread has stopped exceptionally", t);
                     Thread.currentThread().interrupt();
@@ -287,7 +279,7 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
             if (!loadGameWorld()) return;
             gameStartTime = SystemClock.elapsedRealtime();
             lastMsCountCallTime = 0;
-            if (!QSPRestartGame(true)) {
+            if (!restartGame(true)) {
                 showLastQspError();
             }
         });
@@ -301,7 +293,7 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
         }
         final var gameData = getFileContents(context, uri);
         if (gameData == null) return;
-        if (!QSPOpenSavedGameFromData(gameData, gameData.length, true)) {
+        if (!openSavedGameFromData(gameData, true)) {
             showLastQspError();
         }
     }
@@ -312,7 +304,7 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
             runOnQspThread(() -> saveGameState(uri));
             return;
         }
-        final var gameData = QSPSaveGameAsData(false);
+        final var gameData = saveGameAsData(false);
         if (gameData == null) return;
         writeFileContents(context, uri, gameData);
     }
@@ -320,10 +312,10 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     @Override
     public void onActionClicked(final int index) {
         runOnQspThread(() -> {
-            if (!QSPSetSelActionIndex(index, false)) {
+            if (!setSelActIndex(index, false)) {
                 showLastQspError();
             }
-            if (!QSPExecuteSelActionCode(true)) {
+            if (!execSelAction(true)) {
                 showLastQspError();
             }
         });
@@ -332,7 +324,7 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     @Override
     public void onObjectSelected(final int index) {
         runOnQspThread(() -> {
-            if (!QSPSetSelObjectIndex(index, true)) {
+            if (!setSelObjIndex(index, true)) {
                 showLastQspError();
             }
         });
@@ -345,8 +337,8 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
             var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle");
             if (doShow == null) return;
             var input = doShow.outTextValue;
-            QSPSetInputStrText(input);
-            if (!QSPExecUserInput(true)) {
+            setInputStrText(input);
+            if (!execUserInput(true)) {
                 showLastQspError();
             }
         });
@@ -359,7 +351,7 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
             var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle");
             if (doShow == null) return;
             var input = doShow.outTextValue;
-            if (!QSPExecString(input, true)) {
+            if (!execString(input, true)) {
                 showLastQspError();
             }
         });
@@ -368,7 +360,7 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     @Override
     public void execute(final String code) {
         runOnQspThread(() -> {
-            if (!QSPExecString(code, true)) {
+            if (!execString(code, true)) {
                 showLastQspError();
             }
         });
@@ -378,7 +370,7 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     public void executeCounter() {
         if (libLock.isLocked()) return;
         runOnQspThread(() -> {
-            if (!QSPExecCounter(true)) {
+            if (!execCounter(true)) {
                 showLastQspError();
             }
         });
@@ -399,25 +391,24 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     // region LibQpCallbacks
 
     @Override
-    public void RefreshInt() {
+    public void onRefreshInt(boolean isForced) {
         var request = new LibRefIRequest();
-        var configChanged = loadInterfaceConfiguration();
 
-        if (configChanged) {
+        if (loadInterfaceConfiguration()) {
             request.isIConfigChanged = true;
         }
-        if (QSPIsMainDescChanged()) {
-            if (gameState.mainDesc != null) {
-                if (!gameState.mainDesc.equals(QSPGetMainDesc())) {
-                    gameState.mainDesc = QSPGetMainDesc();
+        if (isMainDescChanged()) {
+            if (isNotEmptyOrBlank(gameState.mainDesc)) {
+                if (!gameState.mainDesc.equals(getMainDesc())) {
+                    gameState.mainDesc = getMainDesc();
                     request.isMainDescChanged = true;
                 }
             } else {
-                gameState.mainDesc = QSPGetMainDesc();
+                gameState.mainDesc = getMainDesc();
                 request.isMainDescChanged = true;
             }
         }
-        if (QSPIsActionsChanged()) {
+        if (isActsChanged()) {
             if (gameState.actionsList != null) {
                 if (gameState.actionsList != getActionsList()) {
                     gameState.actionsList = getActionsList();
@@ -428,7 +419,7 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
                 request.isActionsChanged = true;
             }
         }
-        if (QSPIsObjectsChanged()) {
+        if (isObjsChanged()) {
             if (gameState.objectsList != null) {
                 if (gameState.objectsList != getObjectsList()) {
                     gameState.objectsList = getObjectsList();
@@ -439,14 +430,14 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
                 request.isObjectsChanged = true;
             }
         }
-        if (QSPIsVarsDescChanged()) {
-            if (gameState.varsDesc != null) {
-                if (!gameState.varsDesc.equals(QSPGetVarsDesc())) {
-                    gameState.varsDesc = QSPGetVarsDesc();
+        if (isVarsDescChanged()) {
+            if (isNotEmptyOrBlank(gameState.varsDesc)) {
+                if (!gameState.varsDesc.equals(getVarsDesc())) {
+                    gameState.varsDesc = getVarsDesc();
                     request.isVarsDescChanged = true;
                 }
             } else {
-                gameState.varsDesc = QSPGetVarsDesc();
+                gameState.varsDesc = getVarsDesc();
                 request.isVarsDescChanged = true;
             }
         }
@@ -458,63 +449,63 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     }
 
     @Override
-    public void ShowPicture(String path) {
+    public void onShowImage(String file) {
         var inter = gameInterface;
         if (inter == null) return;
-
-        if (isNotEmptyOrBlank(path)) {
-            var picFile = fromFullPath(context, path, getCurGameDir());
+        if (isNotEmptyOrBlank(file)) {
+            var picFile = fromFullPath(context, file, getCurGameDir());
             if (picFile == null) return;
-            inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path);
+            var pathToPic = String.valueOf(picFile.getUri());
+            inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, pathToPic);
         }
     }
 
     @Override
-    public void SetTimer(int msecs) {
+    public void onSetTimer(int msecs) {
         var inter = gameInterface;
         if (inter == null) return;
         inter.setCountInter(msecs);
     }
 
     @Override
-    public void ShowMessage(String message) {
+    public void onShowMessage(String text) {
         var inter = gameInterface;
         if (inter == null) return;
-        inter.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, message);
+        inter.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, text);
     }
 
     @Override
-    public void PlayFile(String path, int volume) {
+    public void onPlayFile(String file, int volume) {
         if (gameInterface == null) return;
-        if (isNotEmptyOrBlank(path)) {
-            gameInterface.playFile(path, volume);
+        if (isNotEmptyOrBlank(file)) {
+            gameInterface.playFile(file, volume);
         }
     }
 
     @Override
-    public boolean IsPlayingFile(final String path) {
+    public boolean onIsPlayingFile(String file) {
         if (gameInterface == null) return false;
-        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path);
+        return isNotEmptyOrBlank(file) && gameInterface.isPlayingFile(file);
     }
 
     @Override
-    public void CloseFile(String path) {
+    public void onCloseFile(String file) {
         if (gameInterface == null) return;
-        if (isNotEmptyOrBlank(path)) {
-            gameInterface.closeFile(path);
+        if (isNotEmptyOrBlank(file)) {
+            gameInterface.closeFile(file);
         } else {
             gameInterface.closeAllFiles();
         }
     }
 
     @Override
-    public void OpenGame(String filename) {
-        if (filename == null) {
+    public void onOpenGameStatus(String file) {
+        if (file == null) {
             if (gameInterface == null) return;
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null);
         } else {
             try {
-                var saveFile = fromFullPath(context, filename, getCurGameDir());
+                var saveFile = fromFullPath(context, file, getCurGameDir());
                 if (!isWritableFile(context, saveFile)) {
                     if (gameInterface != null) {
                         gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found");
@@ -535,12 +526,12 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     }
 
     @Override
-    public void SaveGame(String filename) {
-        if (filename == null) {
+    public void onSaveGameStatus(String file) {
+        if (file == null) {
             if (gameInterface == null) return;
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null);
         } else {
-            var save = new File(filename);
+            var save = new File(file);
             var saveFile = findOrCreateFile(context, getCurGameDir(), save.getName(), MimeType.TEXT);
             if (isWritableFile(context, saveFile)) {
                 saveGameState(saveFile.getUri());
@@ -554,77 +545,57 @@ public class LibNDKProxyImpl extends NDKLib implements LibIProxy {
     }
 
     @Override
-    public String InputBox(String prompt) {
+    public String onInputBox(String text) {
         if (gameInterface == null) return "";
-        var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, prompt);
+        var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, text);
         if (doShow == null) return "";
         return doShow.outTextValue;
     }
 
     @Override
-    public int GetMSCount() {
+    public int onGetMsCount() {
         var now = SystemClock.elapsedRealtime();
         if (lastMsCountCallTime == 0) {
             lastMsCountCallTime = gameStartTime;
         }
-        var dt = (int) (now - lastMsCountCallTime);
+        var dt = now - lastMsCountCallTime;
         lastMsCountCallTime = now;
-        return dt;
+        return (int) dt;
     }
 
     @Override
-    public void AddMenuItem(String name, String imgPath) {
-        var item = new LibMenuItem();
-        item.name = name;
-        item.pathToImage = imgPath;
-        gameState.menuItemsList.add(item);
-    }
-
-    @Override
-    public void ShowMenu() {
-        if (gameInterface == null) return;
+    public int onShowMenu(ListItem[] items) {
+        if (gameInterface == null) return super.onShowMenu(items);
         var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_MENU, null);
-        if (doShow == null) return;
+        if (doShow == null) return super.onShowMenu(items);
         var result = doShow.outNumValue;
         if (result != -1) {
-            QSPSelectMenuItem(result);
+            return result;
         }
+        return super.onShowMenu(items);
     }
 
     @Override
-    public void DeleteMenu() {
-        gameState.menuItemsList.clear();
-    }
-
-    @Override
-    public void Wait(int msecs) {
+    public void onSleep(int msecs) {
         try {
             Thread.sleep(msecs);
         } catch (InterruptedException ex) {
-            Log.e(TAG,"Wait failed", ex);
+            Log.e(TAG, "Wait failed", ex);
         }
     }
 
     @Override
-    public void ShowWindow(int type, boolean isShow) {
+    public void onShowWindow(int type, boolean toShow) {
         if (gameInterface == null) return;
         var windowType = LibTypeWindow.values()[type];
-        gameInterface.changeVisWindow(windowType, isShow);
+        gameInterface.changeVisWindow(windowType, toShow);
     }
 
     @Override
-    public byte[] GetFileContents(String path) {
-        var targetFile = fromFullPath(context, path, getCurGameDir());
-        if (targetFile == null) return null;
-        var targetFileUri = targetFile.getUri();
-        return getFileContents(context , targetFileUri);
-    }
-
-    @Override
-    public void ChangeQuestPath(String path) {
-        var newGameDir = fromFullPath(context, path , getCurGameDir());
+    public void onOpenGame(String file, boolean isNewGame) {
+        var newGameDir = fromFullPath(context, file, getCurGameDir());
         if (newGameDir == null || !newGameDir.exists()) {
-            Log.e(TAG,"Game directory not found: " + path);
+            Log.e(TAG, "Game directory not found: " + file);
             return;
         }
         var currGameDirUri = getCurGameDir().getUri();
