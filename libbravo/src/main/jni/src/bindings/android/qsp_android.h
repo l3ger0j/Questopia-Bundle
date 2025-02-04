@@ -16,7 +16,6 @@
 */
 
 #include <jni.h>
-#include <uchar.h>
 
 #ifndef QSP_ANDROIDDEFINES
 	#define QSP_ANDROIDDEFINES
