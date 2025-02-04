@@ -18,32 +18,40 @@ import org.qp.android.questopiabundle.lib.impl.LibAlphaProxyImpl;
 import org.qp.android.questopiabundle.lib.LibRefIRequest;
 import org.qp.android.questopiabundle.lib.LibTypeDialog;
 import org.qp.android.questopiabundle.lib.LibTypeWindow;
+import org.qp.android.questopiabundle.lib.impl.LibCharlieProxyImpl;
 
 public class QuestopiaBundle extends Service implements GameInterface {
 
     private final Handler counterHandler = new Handler();
     private final Handler counterNDKHandler = new Handler();
-    private LibProxyImpl libProxy;
-    private LibNDKProxyImpl libNDKProxy;
+    private final Handler counterSNXHandler = new Handler();
     private LibAlphaProxyImpl libAlphaProxy;
     private LibBravoProxyImpl libBravoProxy;
+    private LibCharlieProxyImpl libCharlieProxy;
     private AsyncCallbacks callbacks;
     private volatile int counterInterval = 500;
     private final Runnable counterTask = new Runnable() {
         @Override
         public void run() {
-            libProxy.executeCounter();
+            libAlphaProxy.executeCounter();
             counterHandler.postDelayed(this, counterInterval);
         }
     };
     private final Runnable counterNDKTask = new Runnable() {
         @Override
         public void run() {
-            libNDKProxy.executeCounter();
+            libBravoProxy.executeCounter();
             counterNDKHandler.postDelayed(this, counterInterval);
         }
     };
-    private int mLibVersion;
+    private final Runnable counterSNXTask = new Runnable() {
+        @Override
+        public void run() {
+            libCharlieProxy.executeCounter();
+            counterSNXHandler.postDelayed(this, counterInterval);
+        }
+    };
+    private volatile int mLibVersion;
 
     @Override
     public boolean isPlayingFile(String filePath) {
@@ -87,22 +95,24 @@ public class QuestopiaBundle extends Service implements GameInterface {
     }
 
     public void setCallback() {
-        if (mLibVersion == 570) {
-            counterNDKHandler.postDelayed(counterNDKTask, counterInterval);
-        } else if (mLibVersion == 592) {
-            counterHandler.postDelayed(counterTask, counterInterval);
+        switch (mLibVersion) {
+            case 570 -> counterNDKHandler.postDelayed(counterNDKTask, counterInterval);
+            case 575 -> counterSNXHandler.postDelayed(counterSNXTask, counterInterval);
+            case 592 -> counterHandler.postDelayed(counterTask, counterInterval);
         }
     }
 
     public void removeCallback() {
         counterHandler.removeCallbacks(counterTask);
         counterNDKHandler.removeCallbacks(counterNDKTask);
+        counterSNXHandler.removeCallbacks(counterSNXTask);
     }
 
     @Override
     public void doChangeCurrGameDir(Uri newGameDirUri) {
+        if (callbacks == null) return;
+
         try {
-            if (callbacks == null) return;
             callbacks.sendChangeCurrGameDir(newGameDirUri);
         } catch (Exception e) {
             Log.e(this.getClass().getSimpleName(), "Error", e);
@@ -111,14 +121,22 @@ public class QuestopiaBundle extends Service implements GameInterface {
 
     @Override
     public void doRefresh(LibRefIRequest request) {
+        if (callbacks == null) return;
+
         try {
-            if (callbacks == null) return;
-            if (mLibVersion == 570) {
-                callbacks.sendLibRef(new LibResult<>(request));
-                callbacks.sendLibGameState(new LibResult<>(libNDKProxy.getGameState()));
-            } else if (mLibVersion == 592) {
-                callbacks.sendLibRef(new LibResult<>(request));
-                callbacks.sendLibGameState(new LibResult<>(libProxy.getGameState()));
+            switch (mLibVersion) {
+                case 570 -> {
+                    callbacks.sendLibRef(new LibResult<>(request));
+                    callbacks.sendLibGameState(new LibResult<>(libBravoProxy.getGameState()));
+                }
+                case 575 -> {
+                    callbacks.sendLibRef(new LibResult<>(request));
+                    callbacks.sendLibGameState(new LibResult<>(libCharlieProxy.getGameState()));
+                }
+                case 592 -> {
+                    callbacks.sendLibRef(new LibResult<>(request));
+                    callbacks.sendLibGameState(new LibResult<>(libAlphaProxy.getGameState()));
+                }
             }
         } catch (Exception e) {
             Log.e("QuestopiaBundle", "Error", e);
@@ -169,14 +187,22 @@ public class QuestopiaBundle extends Service implements GameInterface {
 
     @Override
     public void doWithCounterDisabled(Runnable runnable) {
-        if (mLibVersion == 570) {
-            counterNDKHandler.removeCallbacks(counterNDKTask);
-            runnable.run();
-            counterNDKHandler.postDelayed(counterNDKTask, counterInterval);
-        } else if (mLibVersion == 592) {
-            counterHandler.removeCallbacks(counterTask);
-            runnable.run();
-            counterHandler.postDelayed(counterTask, counterInterval);
+        switch (mLibVersion) {
+            case 570 -> {
+                counterNDKHandler.removeCallbacks(counterNDKTask);
+                runnable.run();
+                counterNDKHandler.postDelayed(counterNDKTask, counterInterval);
+            }
+            case 575 -> {
+                counterSNXHandler.removeCallbacks(counterSNXTask);
+                runnable.run();
+                counterSNXHandler.postDelayed(counterSNXTask, counterInterval);
+            }
+            case 592 -> {
+                counterHandler.removeCallbacks(counterTask);
+                runnable.run();
+                counterHandler.postDelayed(counterTask, counterInterval);
+            }
         }
     }
 
@@ -202,37 +228,52 @@ public class QuestopiaBundle extends Service implements GameInterface {
             @Override
             public void startNativeLib(int libVer) throws RemoteException {
                 mLibVersion = libVer;
-                if (mLibVersion == 570) {
-                    libNDKProxy = new LibNDKProxyImpl(QuestopiaBundle.this);
-                    setCallback();
+                switch (mLibVersion) {
+                    case 570 -> {
+                        libBravoProxy = new LibBravoProxyImpl(QuestopiaBundle.this);
+                        setCallback();
 
-                    libNDKProxy.setGameInterface(QuestopiaBundle.this);
-                    libNDKProxy.startLibThread();
-                } else if (mLibVersion == 592) {
-                    libProxy = new LibProxyImpl(QuestopiaBundle.this);
-                    setCallback();
+                        libBravoProxy.setGameInterface(QuestopiaBundle.this);
+                        libBravoProxy.startLibThread();
+                    }
+                    case 575 -> {
+                        libCharlieProxy = new LibCharlieProxyImpl(QuestopiaBundle.this);
+                        setCallback();
 
-                    libProxy.setGameInterface(QuestopiaBundle.this);
-                    libProxy.startLibThread();
+                        libCharlieProxy.setGameInterface(QuestopiaBundle.this);
+                        libCharlieProxy.startLibThread();
+                    }
+                    case 592 -> {
+                        libAlphaProxy = new LibAlphaProxyImpl(QuestopiaBundle.this);
+                        setCallback();
+
+                        libAlphaProxy.setGameInterface(QuestopiaBundle.this);
+                        libAlphaProxy.startLibThread();
+                    }
                 }
             }
 
             @Override
             public void stopNativeLib(int libVer) throws RemoteException {
                 mLibVersion = libVer;
-                if (mLibVersion == 570) {
-                    libNDKProxy.setGameInterface(null);
-                    libNDKProxy.stopLibThread();
-                    libNDKProxy = null;
-
-                    stopSelf();
-                } else if (mLibVersion == 592) {
-                    libProxy.setGameInterface(null);
-                    libProxy.stopLibThread();
-                    libProxy = null;
-
-                    stopSelf();
+                switch (mLibVersion) {
+                    case 570 -> {
+                        libBravoProxy.setGameInterface(null);
+                        libBravoProxy.stopLibThread();
+                        libBravoProxy = null;
+                    }
+                    case 575 -> {
+                        libCharlieProxy.setGameInterface(null);
+                        libCharlieProxy.stopLibThread();
+                        libCharlieProxy = null;
+                    }
+                    case 592 -> {
+                        libAlphaProxy.setGameInterface(null);
+                        libAlphaProxy.stopLibThread();
+                        libAlphaProxy = null;
+                    }
                 }
+                stopSelf();
             }
 
             @Override
@@ -242,52 +283,66 @@ public class QuestopiaBundle extends Service implements GameInterface {
                                        Uri gameFileUri) throws RemoteException {
                 Log.i(this.getClass().getSimpleName(), String.valueOf(DocumentFileCompat.getAccessibleAbsolutePaths(getBaseContext())));
                 Log.d(this.getClass().getSimpleName(), "Debug: " + "\nGameID|" + gameId + "\nGameTitle|" + gameTitle + "\nGameDirUri|" + gameDirUri + "\nGameFileUri|" + gameFileUri);
-                if (mLibVersion == 570) {
-                    libNDKProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri);
-                } else if (mLibVersion == 592) {
-                    libProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri);
+                switch (mLibVersion) {
+                    case 570 -> libBravoProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri);
+                    case 575 -> libCharlieProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri);
+                    case 592 -> libAlphaProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri);
                 }
             }
 
             @Override
             public void onActionClicked(int index) throws RemoteException {
-                if (mLibVersion == 570) {
-                    libNDKProxy.onActionClicked(index);
-                } else if (mLibVersion == 592) {
-                    libProxy.onActionClicked(index);
+                switch (mLibVersion) {
+                    case 570 -> libBravoProxy.onActionClicked(index);
+                    case 575 -> libCharlieProxy.onActionClicked(index);
+                    case 592 -> libAlphaProxy.onActionClicked(index);
                 }
             }
 
             @Override
             public void onObjectClicked(int index) throws RemoteException {
-                if (mLibVersion == 570) {
-                    libNDKProxy.onObjectSelected(index);
-                } else if (mLibVersion == 592) {
-                    libProxy.onObjectSelected(index);
+                switch (mLibVersion) {
+                    case 570 -> libBravoProxy.onObjectSelected(index);
+                    case 575 -> libCharlieProxy.onObjectSelected(index);
+                    case 592 -> libAlphaProxy.onObjectSelected(index);
                 }
             }
 
             @Override
             public void doLibRequest(LibResult gameRequest, String codeToExec, Uri fileUri) throws RemoteException {
-                if (mLibVersion == 570) {
-                    var libGameReq = (LibGameRequest) gameRequest.value;
-                    switch (libGameReq) {
-                        case LOAD_FILE -> doWithCounterDisabled(() -> libNDKProxy.loadGameState(fileUri));
-                        case SAVE_FILE -> libNDKProxy.saveGameState(fileUri);
-                        case USE_EXECUTOR -> libNDKProxy.onUseExecutorString();
-                        case USE_INPUT -> libNDKProxy.onInputAreaClicked();
-                        case RESTART_GAME -> libNDKProxy.restartGame();
-                        case EXECUTE_CODE -> libNDKProxy.execute(codeToExec);
+                switch (mLibVersion) {
+                    case 570 -> {
+                        var libGameReq = (LibGameRequest) gameRequest.value;
+                        switch (libGameReq) {
+                            case LOAD_FILE -> doWithCounterDisabled(() -> libBravoProxy.loadGameState(fileUri));
+                            case SAVE_FILE -> libBravoProxy.saveGameState(fileUri);
+                            case USE_EXECUTOR -> libBravoProxy.onUseExecutorString();
+                            case USE_INPUT -> libBravoProxy.onInputAreaClicked();
+                            case RESTART_GAME -> libBravoProxy.restartGame();
+                            case EXECUTE_CODE -> libBravoProxy.execute(codeToExec);
+                        }
                     }
-                } else if (mLibVersion == 592) {
-                    var libGameReq = (LibGameRequest) gameRequest.value;
-                    switch (libGameReq) {
-                        case LOAD_FILE -> doWithCounterDisabled(() -> libProxy.loadGameState(fileUri));
-                        case SAVE_FILE -> libProxy.saveGameState(fileUri);
-                        case USE_EXECUTOR -> libProxy.onUseExecutorString();
-                        case USE_INPUT -> libProxy.onInputAreaClicked();
-                        case RESTART_GAME -> libProxy.restartGame();
-                        case EXECUTE_CODE -> libProxy.execute(codeToExec);
+                    case 575 -> {
+                        var libGameReq = (LibGameRequest) gameRequest.value;
+                        switch (libGameReq) {
+                            case LOAD_FILE -> doWithCounterDisabled(() -> libCharlieProxy.loadGameState(fileUri));
+                            case SAVE_FILE -> libCharlieProxy.saveGameState(fileUri);
+                            case USE_EXECUTOR -> libCharlieProxy.onUseExecutorString();
+                            case USE_INPUT -> libCharlieProxy.onInputAreaClicked();
+                            case RESTART_GAME -> libCharlieProxy.restartGame();
+                            case EXECUTE_CODE -> libCharlieProxy.execute(codeToExec);
+                        }
+                    }
+                    case 592 -> {
+                        var libGameReq = (LibGameRequest) gameRequest.value;
+                        switch (libGameReq) {
+                            case LOAD_FILE -> doWithCounterDisabled(() -> libAlphaProxy.loadGameState(fileUri));
+                            case SAVE_FILE -> libAlphaProxy.saveGameState(fileUri);
+                            case USE_EXECUTOR -> libAlphaProxy.onUseExecutorString();
+                            case USE_INPUT -> libAlphaProxy.onInputAreaClicked();
+                            case RESTART_GAME -> libAlphaProxy.restartGame();
+                            case EXECUTE_CODE -> libAlphaProxy.execute(codeToExec);
+                        }
                     }
                 }
             }
@@ -302,8 +357,9 @@ public class QuestopiaBundle extends Service implements GameInterface {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        libProxy = null;
-        libNDKProxy = null;
+        libAlphaProxy = null;
+        libBravoProxy = null;
+        libCharlieProxy = null;
         removeCallback();
     }
 }
