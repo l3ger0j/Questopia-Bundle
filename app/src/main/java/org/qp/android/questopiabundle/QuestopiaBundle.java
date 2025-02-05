@@ -212,7 +212,7 @@ public class QuestopiaBundle extends Service implements GameInterface {
         return new IQuestopiaBundle.Stub() {
             @Override
             public String versionPlugin() throws RemoteException {
-                return "0.0.1";
+                return BuildConfig.VERSION_NAME;
             }
 
             @Override
