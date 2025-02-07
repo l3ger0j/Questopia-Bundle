@@ -104,9 +104,9 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
     }
 
     private void showLastQspError() {
-        var errorData = (SNXLib.ErrorData) QSPGetLastErrorData();
+        var errorData = getLastErrorData();
         var locName = getStringOrEmpty(errorData.locName());
-        var desc = getStringOrEmpty(QSPGetErrorDesc(errorData.errorNum()));
+        var desc = getStringOrEmpty(getErrorDesc(errorData.errorNum()));
         final var message = String.format(
                 Locale.getDefault(),
                 "Location: %s\nAction: %d\nLine: %d\nError number: %d\nDescription: %s",
@@ -171,7 +171,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
             var newElement = new LibListItem(element);
             if (isNotEmptyOrBlank(newElement.pathToImage)) {
                 var tempPath = normalizeContentPath(getFilename(newElement.pathToImage));
-                var fileFromPath = fromFullPath(context, tempPath, curGameDir);
+                var fileFromPath = fromRelPath(context, tempPath, curGameDir, false);
                 if (fileFromPath != null) {
                     newElement.pathToImage = String.valueOf(fileFromPath.getUri());
                 } else {
@@ -190,27 +190,23 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
     @NonNull
     private ArrayList<LibListItem> getObjectsList() {
         var objects = new ArrayList<LibListItem>();
-        var count = QSPGetObjectsCount();
+        var curGameDir = getCurGameDir();
 
-        for (int i = 0; i < count; i++) {
-            var object = new LibListItem();
-            var objectResult = (SNXLib.ListItem) QSPGetObjectData(i);
-            var curGameDir = getCurGameDir();
-
-            if (objectResult.text().contains("<img")) {
-                if (isContainsHtmlTags(objectResult.text())) {
-                    var tempPath = getSrcDir(objectResult.text());
+        for (var element : getObjects()) {
+            var object = new LibListItem(element);
+            if (object.text.contains("<img")) {
+                if (isContainsHtmlTags(object.text)) {
+                    var tempPath = getSrcDir(object.text);
                     var fileFromPath = fromRelPath(context, tempPath, curGameDir, false);
                     object.pathToImage = String.valueOf(fileFromPath);
                 } else {
-                    var fileFromPath = fromRelPath(context, objectResult.text(), curGameDir, false);
+                    var fileFromPath = fromRelPath(context, object.text, curGameDir, false);
                     object.pathToImage = String.valueOf(fileFromPath);
                 }
             } else {
-                object.pathToImage = objectResult.image();
                 object.text = gameState.interfaceConfig.useHtml
-                        ? removeHtmlTags(objectResult.text())
-                        : objectResult.text();
+                        ? removeHtmlTags(object.text)
+                        : object.text;
             }
             objects.add(object);
         }
@@ -224,14 +220,14 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
         libThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    QSPInit();
+                    init();
                     if (Looper.myLooper() == null) {
                         Looper.prepare();
                     }
                     libHandler = new Handler(Looper.myLooper());
                     libThreadInit = true;
                     Looper.loop();
-                    QSPDeInit();
+                    terminate();
                 } catch (Throwable t) {
                     Log.e(TAG, "lib thread has stopped exceptionally", t);
                     Thread.currentThread().interrupt();
@@ -331,7 +327,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
     @Override
     public void onObjectSelected(final int index) {
         runOnQspThread(() -> {
-            if (!QSPSetSelObjectIndex(index, true)) {
+            if (!setSelObjectIndex(index, true)) {
                 showLastQspError();
             }
         });
@@ -345,7 +341,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
             if (doShow == null) return;
             var input = doShow.outTextValue;
             QSPSetInputStrText(input);
-            if (!QSPExecUserInput(true)) {
+            if (!execUserInput(true)) {
                 showLastQspError();
             }
         });
@@ -358,7 +354,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
             var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle");
             if (doShow == null) return;
             var input = doShow.outTextValue;
-            if (!QSPExecString(input, true)) {
+            if (!execString(input, true)) {
                 showLastQspError();
             }
         });
@@ -367,7 +363,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
     @Override
     public void execute(final String code) {
         runOnQspThread(() -> {
-            if (!QSPExecString(code, true)) {
+            if (!execString(code, true)) {
                 showLastQspError();
             }
         });
@@ -377,7 +373,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
     public void executeCounter() {
         if (libLock.isLocked()) return;
         runOnQspThread(() -> {
-            if (!QSPExecCounter(true)) {
+            if (!execCounter(true)) {
                 showLastQspError();
             }
         });
@@ -416,7 +412,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
                 request.isMainDescChanged = true;
             }
         }
-        if (QSPIsActionsChanged()) {
+        if (isActionsChanged()) {
             if (gameState.actionsList != null) {
                 if (gameState.actionsList != getActionsList()) {
                     gameState.actionsList = getActionsList();
@@ -427,7 +423,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
                 request.isActionsChanged = true;
             }
         }
-        if (QSPIsObjectsChanged()) {
+        if (isObjectsChanged()) {
             if (gameState.objectsList != null) {
                 if (gameState.objectsList != getObjectsList()) {
                     gameState.objectsList = getObjectsList();
@@ -460,12 +456,8 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
     public void ShowPicture(String path) {
         var inter = gameInterface;
         if (inter == null) return;
-
-        if (isNotEmptyOrBlank(path)) {
-            var picFile = fromFullPath(context, path, getCurGameDir());
-            if (picFile == null) return;
-            inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path);
-        }
+        if (!isNotEmptyOrBlank(path)) return;
+        inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path);
     }
 
     @Override
@@ -485,9 +477,8 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
     @Override
     public void PlayFile(String path, int volume) {
         if (gameInterface == null) return;
-        if (isNotEmptyOrBlank(path)) {
-            gameInterface.playFile(path, volume);
-        }
+        if (!isNotEmptyOrBlank(path)) return;
+        gameInterface.playFile(path, volume);
     }
 
     @Override
@@ -572,7 +563,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
     }
 
     @Override
-    public void AddMenuItem(String name, String imgPath) {
+    public void addMenuItem(String name, String imgPath) {
         var item = new LibMenuItem();
         item.name = name;
         item.pathToImage = imgPath;
@@ -592,7 +583,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
     }
 
     @Override
-    public void DeleteMenu() {
+    public void deleteMenu() {
         gameState.menuItemsList.clear();
     }
 

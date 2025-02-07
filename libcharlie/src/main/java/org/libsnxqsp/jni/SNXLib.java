@@ -14,8 +14,8 @@ public abstract class SNXLib {
         System.loadLibrary("snxqsp");
     }
 
-    public native void QSPInit();
-    public native void QSPDeInit();
+    public native void init();
+    public native void terminate();
     public native boolean QSPIsInCallBack();
     public native void QSPEnableDebugMode(boolean isDebug);
     public native Object QSPGetCurStateData();//!!!STUB
@@ -38,26 +38,26 @@ public abstract class SNXLib {
     /* Input string */
     public native void QSPSetInputStrText(String val);
     /* Actions */
-    public native int QSPGetActionsCount();
+    public native int getActionsCount();
     public native ListItem[] getActions();
     public native boolean executeSelActionCode(boolean isRefresh);
     public native boolean setSelActionIndex(int ind, boolean isRefresh);
-    public native int QSPGetSelActionIndex();
-    public native boolean QSPIsActionsChanged();
+    public native int getSelActionIndex();
+    public native boolean isActionsChanged();
     /* Objects */
-    public native Object QSPGetObjectData(int ind);//!!!STUB
-    public native int QSPGetObjectsCount();
-    public native boolean QSPSetSelObjectIndex(int ind, boolean isRefresh);
-    public native int QSPGetSelObjectIndex();
-    public native boolean QSPIsObjectsChanged();
+    public native ListItem[] getObjects();
+    public native int getObjectsCount();
+    public native boolean setSelObjectIndex(int ind, boolean isRefresh);
+    public native int getSelObjectIndex();
+    public native boolean isObjectsChanged();
     /* Code execution */
-    public native boolean QSPExecString(String s, boolean isRefresh);
-    public native boolean QSPExecLocationCode(String name, boolean isRefresh);
-    public native boolean QSPExecCounter(boolean isRefresh);
-    public native boolean QSPExecUserInput(boolean isRefresh);
+    public native boolean execString(String s, boolean isRefresh);
+    public native boolean execLocationCode(String name, boolean isRefresh);
+    public native boolean execCounter(boolean isRefresh);
+    public native boolean execUserInput(boolean isRefresh);
     /* Errors */
-    public native Object QSPGetLastErrorData();
-    public native String QSPGetErrorDesc(int errorNum);
+    public native ErrorData getLastErrorData();
+    public native String getErrorDesc(int errorNum);
     /* Game */
     public native boolean QSPLoadGameWorld(String fileName);
     public native boolean loadGameWorldFromData(byte[] data , int dataSize, String fileName);
@@ -81,9 +81,9 @@ public abstract class SNXLib {
     public void SaveGame(String filename) { }
     public String InputBox(String prompt) { return null; }
     public int GetMSCount() { return 0; }
-    public void AddMenuItem(String name, String imgPath) { }
+    public void addMenuItem(String name, String imgPath) { }
     public int showMenu() { return -1; }
-    public void DeleteMenu() { }
+    public void deleteMenu() { }
     public void Wait(int msecs) { }
     public void ShowWindow(int type, boolean isShow) { }
 }

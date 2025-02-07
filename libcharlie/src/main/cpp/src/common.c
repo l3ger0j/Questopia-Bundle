@@ -22,6 +22,12 @@
 #include "objects.h"
 #include "playlist.h"
 #include "variables.h"
+#include "statements.h"
+#include "text.h"
+#include "time_qsp.h"
+#include "locations.h"
+#include "mathops.h"
+#include "callbacks.h"
 
 static unsigned int qspRandX[55], qspRandY[256], qspRandZ;
 static int qspRandI, qspRandJ;
@@ -39,7 +45,41 @@ QSP_BOOL qspIsVarsDescChanged = QSP_FALSE;
 QSP_BOOL qspCurIsShowVars = QSP_TRUE;
 QSP_BOOL qspCurIsShowInput = QSP_TRUE;
 
-static unsigned int qspURand();
+INLINE unsigned int qspURand();
+
+void qspInitRuntime(void)
+{
+	qspIsDebug = QSP_FALSE;
+	qspRefreshCount = qspFullRefreshCount = 0;
+	qspQstPath = qspQstFullPath = 0;
+	qspQstPathLen = 0;
+	qspQstCRC = 0;
+	qspRealCurLoc = -1;
+	qspRealActIndex = -1;
+	qspRealLine = 0;
+	qspMSCount = 0;
+	qspLocs = 0;
+	qspLocsNames = 0;
+	qspLocsCount = 0;
+	qspCurLoc = -1;
+	qspTimerInterval = 0;
+	qspCurIsShowObjs = qspCurIsShowActs = qspCurIsShowVars = qspCurIsShowInput = QSP_TRUE;
+	setlocale(LC_ALL, QSP_LOCALE);
+	qspSetSeed(0);
+	qspPrepareExecution();
+	qspMemClear(QSP_TRUE);
+	qspInitCallBacks();
+	qspInitStats();
+	qspInitMath();
+}
+
+void qspTerminateRuntime(void)
+{
+	qspMemClear(QSP_FALSE);
+	qspCreateWorld(0, 0);
+	if (qspQstPath) free(qspQstPath);
+	if (qspQstFullPath) free(qspQstFullPath);
+}
 
 void qspPrepareExecution()
 {

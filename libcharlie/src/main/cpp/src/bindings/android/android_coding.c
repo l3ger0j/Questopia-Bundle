@@ -169,10 +169,8 @@ char *qspToSysString(QSP_CHAR *s)
 
 jstring snxToJavaString(JNIEnv *env, QSP_CHAR *str)
 {
-	if (str) {
-		return (*env)->NewString(env, (jchar *)str, qspStrLen(str));
-	}
-	return 0;
+	if (!str) return 0;
+	return (*env)->NewString(env, (jchar *)str, qspStrLen(str));
 }
 
 QSP_CHAR *snxFromJavaString(JNIEnv *env, jstring str)
@@ -194,7 +192,6 @@ JNIListItem snxToJavaListItem(JNIEnv *env, QSP_CHAR *image, QSP_CHAR *text)
 	jobject jniListItem = (*env)->AllocObject(env, snxListItemClass);
 
 	res.ListItem = jniListItem;
-
 	res.Image = snxToJavaString(env, image);
 	res.Name = snxToJavaString(env, text);
 
