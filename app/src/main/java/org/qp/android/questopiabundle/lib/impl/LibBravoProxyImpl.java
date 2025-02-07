@@ -467,12 +467,8 @@ public class LibBravoProxyImpl extends NDKLib implements LibIProxy {
     public void ShowPicture(String path) {
         var inter = gameInterface;
         if (inter == null) return;
-
-        if (isNotEmptyOrBlank(path)) {
-            var picFile = fromFullPath(context, path, getCurGameDir());
-            if (picFile == null) return;
-            inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path);
-        }
+        if (!isNotEmptyOrBlank(path)) return;
+        inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path);
     }
 
     @Override
@@ -492,9 +488,8 @@ public class LibBravoProxyImpl extends NDKLib implements LibIProxy {
     @Override
     public void PlayFile(String path, int volume) {
         if (gameInterface == null) return;
-        if (isNotEmptyOrBlank(path)) {
-            gameInterface.playFile(path, volume);
-        }
+        if (!isNotEmptyOrBlank(path)) return;
+        gameInterface.playFile(path, volume);
     }
 
     @Override

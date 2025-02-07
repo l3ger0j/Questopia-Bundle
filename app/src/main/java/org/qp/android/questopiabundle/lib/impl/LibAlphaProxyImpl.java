@@ -452,12 +452,8 @@ public class LibAlphaProxyImpl extends QSPLib implements LibIProxy {
     public void onShowImage(String file) {
         var inter = gameInterface;
         if (inter == null) return;
-        if (isNotEmptyOrBlank(file)) {
-            var picFile = fromFullPath(context, file, getCurGameDir());
-            if (picFile == null) return;
-            var pathToPic = String.valueOf(picFile.getUri());
-            inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, pathToPic);
-        }
+        if (!isNotEmptyOrBlank(file)) return;
+        inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, file);
     }
 
     @Override
@@ -477,9 +473,8 @@ public class LibAlphaProxyImpl extends QSPLib implements LibIProxy {
     @Override
     public void onPlayFile(String file, int volume) {
         if (gameInterface == null) return;
-        if (isNotEmptyOrBlank(file)) {
-            gameInterface.playFile(file, volume);
-        }
+        if (!isNotEmptyOrBlank(file)) return;
+        gameInterface.playFile(file, volume);
     }
 
     @Override
