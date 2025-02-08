@@ -244,7 +244,7 @@ public class LibBravoProxyImpl extends NDKLib implements LibIProxy {
                     Thread.currentThread().interrupt();
                 }
             }
-        }, "libQSP");
+        }, "libNDKQSP");
         libThread.start();
     }
 

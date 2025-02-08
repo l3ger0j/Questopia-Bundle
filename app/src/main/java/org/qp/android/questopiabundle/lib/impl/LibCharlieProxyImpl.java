@@ -233,7 +233,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
                     Thread.currentThread().interrupt();
                 }
             }
-        }, "libQSP");
+        }, "libSNXQSP");
         libThread.start();
     }
 
