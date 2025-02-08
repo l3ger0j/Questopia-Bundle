@@ -1,18 +1,21 @@
- plugins {
-    alias(libs.plugins.android.application)
+plugins {
+    alias(libs.plugins.android.library)
 }
 
 android {
-    namespace 'org.qp.android.questopiabundle'
+    namespace 'org.qp.android.questopiabundle.libbravo'
     compileSdk 35
 
     defaultConfig {
-        applicationId "org.qp.android.questopiabundle"
         minSdk 26
-        targetSdk 34
-        versionCode 100100
-        versionName "0.1.0-alpha"
+
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+        externalNativeBuild {
+            cmake {
+                cFlags "-D_ANDROID"
+            }
+        }
     }
 
     buildTypes {
@@ -27,25 +30,23 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    buildFeatures {
-        viewBinding true
-        buildConfig true
-        aidl true
+    externalNativeBuild {
+        cmake {
+            path "src/main/jni/CMakeLists.txt"
+            version "3.22.1"
+        }
+    }
+
+    ndkVersion = '27.2.12479018'
+    lint {
+        abortOnError false
     }
 
 }
 
 dependencies {
-    implementation project(':libalpha')
-    implementation project(':libbravo')
-    implementation project(':libcharlie')
-
     implementation libs.appcompat
     implementation libs.material
-    implementation libs.constraintlayout
-
-    implementation libs.storage
-    implementation libs.jsoup
 
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit

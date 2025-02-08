@@ -21,5 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Questopia Bundle"
 include ':app'
-include ':app:libalpha'
-include ':app:libbravo'
+include ':libalpha'
+include ':libbravo'
+include ':libcharlie'

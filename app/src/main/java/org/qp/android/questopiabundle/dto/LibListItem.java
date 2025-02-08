@@ -7,6 +7,8 @@ import androidx.annotation.NonNull;
 
 import com.libqsp.jni.QSPLib;
 
+import org.libsnxqsp.jni.SNXLib;
+
 import java.util.Objects;
 
 public class LibListItem implements Parcelable {
@@ -34,6 +36,11 @@ public class LibListItem implements Parcelable {
     public LibListItem(QSPLib.ListItem item) {
         this.pathToImage = item.image;
         this.text = item.name;
+    }
+
+    public LibListItem(SNXLib.ListItem item) {
+        this.pathToImage = item.image();
+        this.text = item.text();
     }
 
     protected LibListItem(Parcel in) {
