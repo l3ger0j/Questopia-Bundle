@@ -2,13 +2,13 @@ package org.libsnxqsp.jni;
 
 public abstract class SNXLib {
 
-    public record ListItem(String image , String text) { }
+    public record ListItem(String image, String text) { }
 
-    public record VarValResp(boolean isSuccess , String stringValue , int intValue) { }
+    public record VarValResp(boolean isSuccess, String stringValue, int intValue) { }
 
     public record ExecutionState(String loc, int actIndex, int lineNum) { }
 
-    public record ErrorData(String locName , int errorNum , int index , int line) { }
+    public record ErrorData(String locName, int errorNum, int index, int line) { }
 
     static {
         System.loadLibrary("snxqsp");
