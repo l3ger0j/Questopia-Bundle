@@ -64,8 +64,7 @@ public class LibAlphaProxyImpl extends QSPLib implements LibIProxy {
         return DocumentFileCompat.fromUri(context, gameState.gameDirUri);
     }
 
-    private void runOnQspThread(final Runnable runnable) {
-//        throwIfNotMainThread();
+    private synchronized void runOnQspThread(final Runnable runnable) {
         if (libThread == null) {
             Log.w(TAG, "Lib thread has not been started!");
             return;
@@ -165,6 +164,7 @@ public class LibAlphaProxyImpl extends QSPLib implements LibIProxy {
     private ArrayList<LibListItem> getActionsList() {
         var actions = new ArrayList<LibListItem>();
         var curGameDir = getCurGameDir();
+
         for (var element : getActions()) {
             var newElement = new LibListItem(element);
             if (isNotEmptyOrBlank(newElement.pathToImage)) {
@@ -181,6 +181,7 @@ public class LibAlphaProxyImpl extends QSPLib implements LibIProxy {
                     : newElement.text;
             actions.add(newElement);
         }
+
         return actions;
     }
 
@@ -234,8 +235,7 @@ public class LibAlphaProxyImpl extends QSPLib implements LibIProxy {
         libThread.start();
     }
 
-    public void stopLibThread() {
-//        throwIfNotMainThread();
+    public synchronized void stopLibThread() {
         if (libThread == null) return;
         if (libThreadInit) {
             var handler = libHandler;

@@ -65,8 +65,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
         return DocumentFileCompat.fromUri(context, gameState.gameDirUri);
     }
 
-    private void runOnQspThread(final Runnable runnable) {
-//        throwIfNotMainThread();
+    private synchronized void runOnQspThread(final Runnable runnable) {
         if (libThread == null) {
             Log.w(TAG, "Lib thread has not been started!");
             return;
@@ -237,8 +236,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
         libThread.start();
     }
 
-    public void stopLibThread() {
-//        throwIfNotMainThread();
+    public synchronized void stopLibThread() {
         if (libThread == null) return;
         if (libThreadInit) {
             var handler = libHandler;
