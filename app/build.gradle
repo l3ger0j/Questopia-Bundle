@@ -1,4 +1,4 @@
-plugins {
+ plugins {
     alias(libs.plugins.android.application)
 }
 
@@ -10,8 +10,8 @@ android {
         applicationId "org.qp.android.questopiabundle"
         minSdk 26
         targetSdk 34
-        versionCode 100000
-        versionName "0.0.1"
+        versionCode 100100
+        versionName "0.1.0-alpha"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
