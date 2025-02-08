@@ -244,7 +244,7 @@ public class LibAlphaProxyImpl extends QSPLib implements LibIProxy {
             }
             libThreadInit = false;
         } else {
-            Log.w(TAG, "libqsp thread has been started, but not initialized");
+            Log.w(TAG, "lib thread has been started, but not initialized");
         }
         libThread.interrupt();
     }
