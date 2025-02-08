@@ -31,6 +31,8 @@
 		#endif
 
 		typedef char16_t QSP_CHAR;
+		#define QSP_FMT2(x) u##x
+		#define QSP_FMT(x) QSP_FMT2(x)
 
 		#define QSP_STRCOLL qspStrsComp
 		#define QSP_CHRLWR qspToWLower
