@@ -14,7 +14,7 @@ android {
         consumerProguardFiles("consumer-rules.pro")
         externalNativeBuild {
             cmake {
-                cFlags += listOf("-DANDROID")
+                cFlags += listOf("-D_ANDROID")
             }
         }
     }
