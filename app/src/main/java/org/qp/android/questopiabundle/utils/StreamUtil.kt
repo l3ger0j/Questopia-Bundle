@@ -1,22 +1,23 @@
-package org.qp.android.questopiabundle.utils;
+package org.qp.android.questopiabundle.utils
 
-import androidx.annotation.NonNull;
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+object StreamUtil {
 
-public final class StreamUtil {
-    private static final int BUFFER_SIZE = 8192;
+    private const val BUFFER_SIZE = 8192
 
     /**
-     * Copies data from the <code>from</code> stream to the <code>to</code> stream.
+     * Copies data from the `from` stream to the `to` stream.
      */
-    public static void copy(@NonNull InputStream from, OutputStream to) throws IOException {
-        var buffer = new byte[BUFFER_SIZE];
-        int bytesRead;
-        while ((bytesRead = from.read(buffer)) > 0) {
-            to.write(buffer, 0, bytesRead);
+    @JvmStatic
+    @Throws(IOException::class)
+    fun copy(from: InputStream, to: OutputStream) {
+        val buffer = ByteArray(BUFFER_SIZE)
+        var bytesRead: Int
+        while ((from.read(buffer).also { bytesRead = it }) > 0) {
+            to.write(buffer, 0, bytesRead)
         }
     }
 }

@@ -500,7 +500,7 @@ public class LibAlphaProxyImpl extends QSPLib implements LibIProxy {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null);
         } else {
             try {
-                var saveFile = fromFullPath(context, file, getCurGameDir());
+                var saveFile = fromFullPath(context, file);
                 if (!isWritableFile(context, saveFile)) {
                     if (gameInterface != null) {
                         gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found");
@@ -588,7 +588,7 @@ public class LibAlphaProxyImpl extends QSPLib implements LibIProxy {
 
     @Override
     public void onOpenGame(String file, boolean isNewGame) {
-        var newGameDir = fromFullPath(context, file, getCurGameDir());
+        var newGameDir = fromFullPath(context, file);
         if (newGameDir == null || !newGameDir.exists()) {
             Log.e(TAG, "Game directory not found: " + file);
             return;

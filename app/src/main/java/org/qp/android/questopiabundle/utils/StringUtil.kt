@@ -1,22 +1,22 @@
-package org.qp.android.questopiabundle.utils;
+package org.qp.android.questopiabundle.utils
 
-import androidx.annotation.NonNull;
+import org.jetbrains.annotations.Contract
 
-import org.jetbrains.annotations.Contract;
+object StringUtil {
 
-public final class StringUtil {
-
-    public static boolean isNotEmptyOrBlank(String str) {
-        return str != null && !str.isEmpty() && !str.isBlank();
+    @JvmStatic
+    fun isNotEmptyOrBlank(str: String?): Boolean {
+        return !str.isNullOrEmpty() && str.isNotBlank()
     }
 
-    public static boolean isNullOrEmpty(String str) {
-        return str == null || str.isEmpty();
+    @JvmStatic
+    fun isNullOrEmpty(str: String?): Boolean {
+        return str.isNullOrEmpty()
     }
 
-    @NonNull
+    @JvmStatic
     @Contract(value = "!null -> param1", pure = true)
-    public static String getStringOrEmpty(String str) {
-        return str != null ? str : "";
+    fun getStringOrEmpty(str: String?): String {
+        return str ?: ""
     }
 }

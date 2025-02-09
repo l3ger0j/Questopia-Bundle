@@ -90,6 +90,7 @@ public class LibBravoProxyImpl extends NDKLib implements LibIProxy {
     private boolean loadGameWorld() {
         var gameFileUri = gameState.gameFileUri;
         var gameFile = DocumentFileCompat.fromUri(context, gameState.gameFileUri);
+        if (gameFile == null) return false;
         var gameFileFullPath = documentWrap(gameFile).getAbsolutePath(context);
         var gameData = getFileContents(context, gameFileUri);
         if (gameData == null) return false;
@@ -512,17 +513,15 @@ public class LibBravoProxyImpl extends NDKLib implements LibIProxy {
             if (gameInterface == null) return;
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null);
         } else {
+            if (gameInterface == null) return;
             try {
-                var saveFile = fromFullPath(context, filename, getCurGameDir());
-                if (!isWritableFile(context, saveFile)) {
-                    if (gameInterface != null) {
-                        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found");
-                    }
-                    Log.e(TAG, "Save file not found");
-                    return;
-                }
-                if (gameInterface != null) {
+                var saveFile = fromFullPath(context, filename);
+                if (isWritableFile(context, saveFile)) {
+                    if (saveFile == null) return;
                     gameInterface.doWithCounterDisabled(() -> loadGameState(saveFile.getUri()));
+                } else {
+                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found");
+                    Log.e(TAG, "Save file not found");
                 }
             } catch (Exception e) {
                 if (gameInterface != null) {
@@ -542,6 +541,7 @@ public class LibBravoProxyImpl extends NDKLib implements LibIProxy {
             var save = new File(filename);
             var saveFile = findOrCreateFile(context, getCurGameDir(), save.getName(), MimeType.TEXT);
             if (isWritableFile(context, saveFile)) {
+                if (saveFile == null) return;
                 saveGameState(saveFile.getUri());
             } else {
                 if (gameInterface != null) {
@@ -613,7 +613,7 @@ public class LibBravoProxyImpl extends NDKLib implements LibIProxy {
 
     @Override
     public byte[] GetFileContents(String path) {
-        var targetFile = fromFullPath(context, path, getCurGameDir());
+        var targetFile = fromFullPath(context, path);
         if (targetFile == null) return null;
         var targetFileUri = targetFile.getUri();
         return getFileContents(context , targetFileUri);
@@ -621,7 +621,7 @@ public class LibBravoProxyImpl extends NDKLib implements LibIProxy {
 
     @Override
     public void ChangeQuestPath(String path) {
-        var newGameDir = fromFullPath(context, path , getCurGameDir());
+        var newGameDir = fromFullPath(context, path);
         if (newGameDir == null || !newGameDir.exists()) {
             Log.e(TAG,"Game directory not found: " + path);
             return;

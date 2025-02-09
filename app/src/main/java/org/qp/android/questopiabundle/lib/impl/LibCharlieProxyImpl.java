@@ -502,7 +502,7 @@ public class LibCharlieProxyImpl extends SNXLib implements LibIProxy {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null);
         } else {
             try {
-                var saveFile = fromFullPath(context, filename, getCurGameDir());
+                var saveFile = fromFullPath(context, filename);
                 if (!isWritableFile(context, saveFile)) {
                     if (gameInterface != null) {
                         gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found");

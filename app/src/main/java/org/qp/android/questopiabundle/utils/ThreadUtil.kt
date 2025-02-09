@@ -1,12 +1,12 @@
-package org.qp.android.questopiabundle.utils;
+package org.qp.android.questopiabundle.utils
 
-public final class ThreadUtil {
+object ThreadUtil {
 
     /**
-     * @return <code>true</code> if the current thread is <code>thread</code>, otherwise <code>false</code>
+     * @return `true` if the current thread is `thread`, otherwise `false`
      */
-    public static boolean isSameThread(Thread thread) {
-        return Thread.currentThread().equals(thread);
+    @JvmStatic
+    fun isSameThread(thread: Thread): Boolean {
+        return Thread.currentThread() == thread
     }
-
 }
