@@ -16,7 +16,6 @@
 
         <service
             android:name=".QuestopiaBundle"
-            android:permission="android.permission.INTERNET"
             android:process=":remote"
             android:exported="true">
             <intent-filter>
