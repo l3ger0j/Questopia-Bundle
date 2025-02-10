@@ -85,13 +85,13 @@ JNIEXPORT jobject JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetCurStateData(JNIEn
 /* Version */
 JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetVersion(JNIEnv *env, jobject this)
 {
-	return QSP_VER;
+	return snxToJavaString(env, QSP_VER);
 }
 
 /* Date and time of compilation */
 JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetCompiledDateTime(JNIEnv *env, jobject this)
 {
-	return QSP_FMT(__DATE__) QSP_FMT(", ") QSP_FMT(__TIME__);
+	return snxToJavaString(env, QSP_FMT(__DATE__) QSP_FMT(", ") QSP_FMT(__TIME__));
 }
 /* ------------------------------------------------------------ */
 /* Number of full location updates */
