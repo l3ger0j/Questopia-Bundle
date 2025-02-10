@@ -1,70 +1,41 @@
-package org.qp.android.questopiabundle.dto;
+package org.qp.android.questopiabundle.dto
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.Parcel
+import android.os.Parcelable
+import com.libqsp.jni.QSPLib
+import org.libndkqsp.jni.NDKLib
+import org.libsnxqsp.jni.SNXLib
 
-import androidx.annotation.NonNull;
+data class LibListItem(
+    var text: String = "",
+    var pathToImage: String = ""
+) : Parcelable {
 
-import com.libqsp.jni.QSPLib;
+    constructor(item: QSPLib.ListItem) : this(item.name, item.image)
 
-import org.libsnxqsp.jni.SNXLib;
+    constructor(item: NDKLib.ListItem) : this(item.text, item.image)
 
-import java.util.Objects;
+    constructor(item: SNXLib.ListItem) : this(item.text, item.image)
 
-public class LibListItem implements Parcelable {
+    constructor(source: Parcel) : this(
+        source.readString() ?: "",
+        source.readString() ?: ""
+    )
 
-    public static final Creator<LibListItem> CREATOR = new Creator<>() {
-        @Override
-        public LibListItem createFromParcel(Parcel in) {
-            return new LibListItem(in);
+    override fun describeContents(): Int = 0
+
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        dest.writeString(text)
+        dest.writeString(pathToImage)
+    }
+
+    companion object CREATOR : Parcelable.Creator<LibListItem> {
+        override fun createFromParcel(source: Parcel): LibListItem {
+            return LibListItem(source)
         }
 
-        @Override
-        public LibListItem[] newArray(int size) {
-            return new LibListItem[size];
+        override fun newArray(size: Int): Array<LibListItem?> {
+            return arrayOfNulls(size)
         }
-    };
-
-    public String text;
-    public String pathToImage;
-
-    public LibListItem() {
-        text = "";
-        pathToImage = "";
-    }
-
-    public LibListItem(QSPLib.ListItem item) {
-        this.pathToImage = item.image;
-        this.text = item.name;
-    }
-
-    public LibListItem(SNXLib.ListItem item) {
-        this.pathToImage = item.image();
-        this.text = item.text();
-    }
-
-    protected LibListItem(Parcel in) {
-        text = in.readString();
-        pathToImage = in.readString();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        var that = (LibListItem) o;
-        return Objects.equals(text, that.text)
-                && Objects.equals(pathToImage, that.pathToImage);
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(text);
-        dest.writeString(pathToImage);
     }
 }

@@ -1,50 +1,34 @@
-package org.qp.android.questopiabundle.lib;
+package org.qp.android.questopiabundle.lib
 
-import android.net.Uri;
+import android.net.Uri
+import org.qp.android.questopiabundle.GameInterface
 
-import org.qp.android.questopiabundle.GameInterface;
-
-public interface LibIProxy {
+interface LibIProxy {
     /**
      * Starts the library thread.
      */
-    void startLibThread();
-
+    fun startLibThread()
     /**
      * Stops the library thread.
      */
-    void stopLibThread();
-
-    void enableDebugMode(boolean isDebug);
-
-    void runGame(long gameId, String gameTitle, Uri gameDirUri, Uri gameFileUri);
-
-    void restartGame();
-
-    void loadGameState(Uri uri);
-
-    void saveGameState(Uri uri);
-
-    void onActionClicked(int index);
-
-    void onObjectSelected(int index);
-
-    void onInputAreaClicked();
-
-    void onUseExecutorString();
-
+    fun stopLibThread()
+    fun enableDebugMode(isDebug: Boolean)
+    fun runGame(gameId: Long, gameTitle: String, gameDirUri: Uri, gameFileUri: Uri)
+    fun restartGame()
+    fun loadGameState(uri: Uri)
+    fun saveGameState(uri: Uri)
+    fun onActionClicked(index: Int)
+    fun onObjectSelected(index: Int)
+    fun onInputAreaClicked()
+    fun onUseExecutorString()
     /**
      * Starts execution of the specified line of code in the library.
      */
-    void execute(String code);
-
+    fun execute(code: String?)
     /**
      * Starts processing the location counter in the library.
      */
-    void executeCounter();
-
-    LibGameState getGameState();
-
-    void setGameInterface(GameInterface view);
-
+    fun executeCounter()
+    val gameState: LibGameState
+    fun setGameInterface(inter: GameInterface)
 }

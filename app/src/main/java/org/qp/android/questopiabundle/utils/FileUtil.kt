@@ -3,28 +3,22 @@ package org.qp.android.questopiabundle.utils
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.annotation.NonNull
 import androidx.documentfile.provider.DocumentFile
 import com.anggrayudi.storage.FileWrapper
-import com.anggrayudi.storage.file.CreateMode
 import com.anggrayudi.storage.file.DocumentFileCompat
 import com.anggrayudi.storage.file.child
 import com.anggrayudi.storage.file.isWritable
-import com.anggrayudi.storage.file.makeFile
 import org.qp.android.questopiabundle.utils.StreamUtil.copy
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 
 object FileUtil {
-
-    @JvmStatic
     fun isWritableFile(context: Context, file: DocumentFile?): Boolean {
         if (file == null) return false
         val canWrite = file.isWritable(context)
         return file.exists() && file.isFile && canWrite
     }
 
-    @JvmStatic
     fun getFileContents(
         context: Context,
         uriContent: Uri
@@ -48,12 +42,10 @@ object FileUtil {
         }
     }
 
-    @JvmStatic
     fun documentWrap(inputFile: DocumentFile): FileWrapper.Document {
         return FileWrapper.Document(inputFile)
     }
 
-    @JvmStatic
     fun writeFileContents(
         context: Context,
         uriContent: Uri,
@@ -74,17 +66,6 @@ object FileUtil {
         }
     }
 
-    @JvmStatic
-    fun findOrCreateFile(
-        context: Context,
-        srcDir: DocumentFile,
-        name: String,
-        mimeType: String?
-    ): DocumentFile? {
-        return srcDir.makeFile(context, name, mimeType, CreateMode.REUSE)
-    }
-
-    @JvmStatic
     fun fromRelPath(
         context: Context,
         path: String,
@@ -94,7 +75,6 @@ object FileUtil {
         return parentDir.child(context, path, requiresWriteAccess)
     }
 
-    @JvmStatic
     fun fromFullPath(
         context: Context,
         fullPath: String

@@ -1,57 +1,41 @@
-package org.qp.android.questopiabundle.lib;
+package org.qp.android.questopiabundle.lib
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.Parcel
+import android.os.Parcelable
 
-import androidx.annotation.NonNull;
+data class LibRefIRequest(
+    var isIConfigChanged: Boolean = false,
+    var isMainDescChanged: Boolean = false,
+    var isActionsChanged: Boolean = false,
+    var isObjectsChanged: Boolean = false,
+    var isVarsDescChanged: Boolean = false
+) : Parcelable {
 
-public class LibRefIRequest implements Parcelable {
+    constructor(source: Parcel) : this(
+        source.readInt() != 0,
+        source.readInt() != 0,
+        source.readInt() != 0,
+        source.readInt() != 0,
+        source.readInt() != 0,
+    )
 
-    public static final Creator<LibRefIRequest> CREATOR = new Creator<>() {
-        @Override
-        public LibRefIRequest createFromParcel(Parcel in) {
-            return new LibRefIRequest(in);
+    override fun describeContents(): Int = 0
+
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        dest.writeInt(if (isIConfigChanged) 1 else 0)
+        dest.writeInt(if (isMainDescChanged) 1 else 0)
+        dest.writeInt(if (isActionsChanged) 1 else 0)
+        dest.writeInt(if (isObjectsChanged) 1 else 0)
+        dest.writeInt(if (isVarsDescChanged) 1 else 0)
+    }
+
+    companion object CREATOR : Parcelable.Creator<LibRefIRequest> {
+        override fun createFromParcel(source: Parcel): LibRefIRequest {
+            return LibRefIRequest(source)
         }
 
-        @Override
-        public LibRefIRequest[] newArray(int size) {
-            return new LibRefIRequest[size];
+        override fun newArray(size: Int): Array<LibRefIRequest?> {
+            return arrayOfNulls(size)
         }
-    };
-
-    public boolean isIConfigChanged;
-    public boolean isMainDescChanged;
-    public boolean isActionsChanged;
-    public boolean isObjectsChanged;
-    public boolean isVarsDescChanged;
-
-    public LibRefIRequest() {
-        isIConfigChanged = false;
-        isMainDescChanged = false;
-        isActionsChanged = false;
-        isObjectsChanged = false;
-        isVarsDescChanged = false;
-    }
-
-    protected LibRefIRequest(Parcel in) {
-        isIConfigChanged = in.readByte() != 0;
-        isMainDescChanged = in.readByte() != 0;
-        isActionsChanged = in.readByte() != 0;
-        isObjectsChanged = in.readByte() != 0;
-        isVarsDescChanged = in.readByte() != 0;
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeByte((byte) (isIConfigChanged ? 1 : 0));
-        dest.writeByte((byte) (isMainDescChanged ? 1 : 0));
-        dest.writeByte((byte) (isActionsChanged ? 1 : 0));
-        dest.writeByte((byte) (isObjectsChanged ? 1 : 0));
-        dest.writeByte((byte) (isVarsDescChanged ? 1 : 0));
     }
 }

@@ -1,39 +1,29 @@
-package org.qp.android.questopiabundle;
+package org.qp.android.questopiabundle
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.Parcel
+import android.os.Parcelable
 
-public class LibResult<T extends Parcelable> implements Parcelable {
+data class LibResult<T : Parcelable?>(
+    var value: T?
+) : Parcelable {
 
-    public static final Creator<LibResult<Parcelable>> CREATOR = new Creator<>() {
-        @Override
-        public LibResult<Parcelable> createFromParcel(Parcel in) {
-            return new LibResult<>(in);
+    constructor(source: Parcel) : this(null) {
+        this.value = source.readParcelable(javaClass.classLoader)
+    }
+
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        dest.writeParcelable(value, flags)
+    }
+
+    override fun describeContents(): Int = 0
+
+    companion object CREATOR : Parcelable.Creator<LibResult<Parcelable>> {
+        override fun createFromParcel(source: Parcel): LibResult<Parcelable> {
+            return LibResult(source)
         }
 
-        @Override
-        public LibResult<Parcelable>[] newArray(int size) {
-            return new LibResult[size];
+        override fun newArray(size: Int): Array<LibResult<Parcelable>?> {
+            return arrayOfNulls(size)
         }
-    };
-
-    public T value;
-
-    public LibResult(T value) {
-        this.value = value;
-    }
-
-    protected LibResult(Parcel in) {
-        this.value = in.readParcelable(getClass().getClassLoader());
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeParcelable(value, flags);
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
     }
 }

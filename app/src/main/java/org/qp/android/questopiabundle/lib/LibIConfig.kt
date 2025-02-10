@@ -1,60 +1,49 @@
-package org.qp.android.questopiabundle.lib;
+package org.qp.android.questopiabundle.lib
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.Parcel
+import android.os.Parcelable
 
-import androidx.annotation.NonNull;
+data class LibIConfig(
+    var useHtml: Boolean = false,
+    var fontSize: Long = 0L,
+    var backColor: Long = 0L,
+    var fontColor: Long = 0L,
+    var linkColor: Long = 0L
+) : Parcelable {
 
-public class LibIConfig implements Parcelable {
+    constructor(source: Parcel) : this(
+        source.readInt() != 0,
+        source.readLong(),
+        source.readLong(),
+        source.readLong(),
+        source.readLong()
+    )
 
-    public static final Creator<LibIConfig> CREATOR = new Creator<>() {
-        @Override
-        public LibIConfig createFromParcel(Parcel in) {
-            return new LibIConfig(in);
+    fun reset() {
+        useHtml = false
+        fontSize = 0L
+        backColor = 0L
+        fontColor = 0L
+        linkColor = 0L
+    }
+
+    override fun describeContents(): Int = 0
+
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        dest.writeInt(if (useHtml) 1 else 0)
+        dest.writeLong(fontSize)
+        dest.writeLong(backColor)
+        dest.writeLong(fontColor)
+        dest.writeLong(linkColor)
+    }
+
+    companion object CREATOR : Parcelable.Creator<LibIConfig> {
+        override fun createFromParcel(source: Parcel): LibIConfig {
+            return LibIConfig(source)
         }
 
-        @Override
-        public LibIConfig[] newArray(int size) {
-            return new LibIConfig[size];
+        override fun newArray(size: Int): Array<LibIConfig?> {
+            return arrayOfNulls(size)
         }
-    };
-
-    public boolean useHtml;
-    public long fontSize;
-    public long backColor;
-    public long fontColor;
-    public long linkColor;
-
-    public LibIConfig() {
-    }
-
-    protected LibIConfig(Parcel in) {
-        useHtml = in.readByte() != 0;
-        fontSize = in.readLong();
-        backColor = in.readLong();
-        fontColor = in.readLong();
-        linkColor = in.readLong();
-    }
-
-    public void reset() {
-        useHtml = false;
-        fontSize = 0;
-        backColor = 0;
-        fontColor = 0;
-        linkColor = 0;
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeByte((byte) (useHtml ? 1 : 0));
-        dest.writeLong(fontSize);
-        dest.writeLong(backColor);
-        dest.writeLong(fontColor);
-        dest.writeLong(linkColor);
     }
 }

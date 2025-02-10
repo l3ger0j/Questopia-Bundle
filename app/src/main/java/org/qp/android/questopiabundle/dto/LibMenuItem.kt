@@ -1,45 +1,32 @@
-package org.qp.android.questopiabundle.dto;
+package org.qp.android.questopiabundle.dto
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.Parcel
+import android.os.Parcelable
 
-import androidx.annotation.NonNull;
+data class LibMenuItem(
+    var name: String = "",
+    var pathToImage: String = ""
+) : Parcelable {
 
-public class LibMenuItem implements Parcelable {
+    constructor(source: Parcel) : this(
+        source.readString() ?: "",
+        source.readString() ?: ""
+    )
 
-    public static final Creator<LibMenuItem> CREATOR = new Creator<>() {
-        @Override
-        public LibMenuItem createFromParcel(Parcel in) {
-            return new LibMenuItem(in);
+    override fun describeContents(): Int = 0
+
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        dest.writeString(name)
+        dest.writeString(pathToImage)
+    }
+
+    companion object CREATOR : Parcelable.Creator<LibMenuItem> {
+        override fun createFromParcel(source: Parcel): LibMenuItem {
+            return LibMenuItem(source)
         }
 
-        @Override
-        public LibMenuItem[] newArray(int size) {
-            return new LibMenuItem[size];
+        override fun newArray(size: Int): Array<LibMenuItem?> {
+            return arrayOfNulls(size)
         }
-    };
-
-    public String name;
-    public String pathToImage;
-
-    public LibMenuItem() {
-        this.name = "";
-        this.pathToImage = "";
-    }
-
-    protected LibMenuItem(Parcel in) {
-        this.name = in.readString();
-        this.pathToImage = in.readString();
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(name);
-        dest.writeString(pathToImage);
     }
 }

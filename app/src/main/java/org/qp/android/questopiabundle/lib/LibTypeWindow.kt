@@ -1,36 +1,28 @@
-package org.qp.android.questopiabundle.lib;
+package org.qp.android.questopiabundle.lib
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.Parcel
+import android.os.Parcelable
 
-import androidx.annotation.NonNull;
-
-public enum LibTypeWindow implements Parcelable {
+enum class LibTypeWindow : Parcelable {
     ACTIONS,
     OBJECTS,
     VARIABLES,
     INPUT
     ;
 
-    public static final Creator<LibTypeWindow> CREATOR = new Creator<>() {
-        @Override
-        public LibTypeWindow createFromParcel(Parcel in) {
-            return LibTypeWindow.valueOf(in.readString());
-        }
+    override fun describeContents(): Int = 0
 
-        @Override
-        public LibTypeWindow[] newArray(int size) {
-            return new LibTypeWindow[size];
-        }
-    };
-
-    @Override
-    public int describeContents() {
-        return 0;
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        dest.writeString(name)
     }
 
-    @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(name());
+    companion object CREATOR : Parcelable.Creator<LibTypeWindow> {
+        override fun createFromParcel(source: Parcel): LibTypeWindow {
+            return valueOf(source.readString()!!)
+        }
+
+        override fun newArray(size: Int): Array<LibTypeWindow?> {
+            return arrayOfNulls(size)
+        }
     }
 }

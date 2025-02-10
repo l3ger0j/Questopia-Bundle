@@ -1,44 +1,32 @@
-package org.qp.android.questopiabundle;
+package org.qp.android.questopiabundle
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.Parcel
+import android.os.Parcelable
 
-import androidx.annotation.NonNull;
+data class LibDialogRetValue(
+    var outTextValue: String = "",
+    var outNumValue: Int = 0
+) : Parcelable {
 
-public class LibDialogRetValue implements Parcelable {
+    constructor(source: Parcel) : this() {
+        outTextValue = source.readString() ?: ""
+        outNumValue = source.readInt()
+    }
 
-    public static final Creator<LibDialogRetValue> CREATOR = new Creator<>() {
-        @Override
-        public LibDialogRetValue createFromParcel(Parcel in) {
-            return new LibDialogRetValue(in);
+    override fun describeContents(): Int = 0
+
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        dest.writeString(outTextValue)
+        dest.writeInt(outNumValue)
+    }
+
+    companion object CREATOR : Parcelable.Creator<LibDialogRetValue> {
+        override fun createFromParcel(source: Parcel): LibDialogRetValue {
+            return LibDialogRetValue(source)
         }
 
-        @Override
-        public LibDialogRetValue[] newArray(int size) {
-            return new LibDialogRetValue[size];
+        override fun newArray(size: Int): Array<LibDialogRetValue?> {
+            return arrayOfNulls(size)
         }
-    };
-
-    public String outTextValue;
-    public int outNumValue;
-
-    protected LibDialogRetValue(Parcel in) {
-        outTextValue = in.readString();
-        outNumValue = in.readInt();
-    }
-
-    public LibDialogRetValue() {
-
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(outTextValue);
-        dest.writeInt(outNumValue);
     }
 }

@@ -1,11 +1,9 @@
-package org.qp.android.questopiabundle.lib;
+package org.qp.android.questopiabundle.lib
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.Parcel
+import android.os.Parcelable
 
-import androidx.annotation.NonNull;
-
-public enum LibTypeDialog implements Parcelable {
+enum class LibTypeDialog : Parcelable {
     DIALOG_ERROR,
     DIALOG_PICTURE,
     DIALOG_MESSAGE,
@@ -16,26 +14,19 @@ public enum LibTypeDialog implements Parcelable {
     DIALOG_POPUP_LOAD,
     ;
 
+    override fun describeContents(): Int = 0
 
-    public static final Creator<LibTypeDialog> CREATOR = new Creator<>() {
-        @Override
-        public LibTypeDialog createFromParcel(Parcel in) {
-            return LibTypeDialog.valueOf(in.readString());
-        }
-
-        @Override
-        public LibTypeDialog[] newArray(int size) {
-            return new LibTypeDialog[size];
-        }
-    };
-
-    @Override
-    public int describeContents() {
-        return 0;
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        dest.writeString(name)
     }
 
-    @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(name());
+    companion object CREATOR : Parcelable.Creator<LibTypeDialog> {
+        override fun createFromParcel(source: Parcel): LibTypeDialog {
+            return valueOf(source.readString()!!)
+        }
+
+        override fun newArray(size: Int): Array<LibTypeDialog?> {
+            return arrayOfNulls(size)
+        }
     }
 }

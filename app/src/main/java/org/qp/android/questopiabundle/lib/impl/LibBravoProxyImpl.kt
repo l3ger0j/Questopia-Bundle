@@ -1,638 +1,543 @@
-package org.qp.android.questopiabundle.lib.impl;
+package org.qp.android.questopiabundle.lib.impl
 
-import static org.qp.android.questopiabundle.utils.FileUtil.documentWrap;
-import static org.qp.android.questopiabundle.utils.FileUtil.findOrCreateFile;
-import static org.qp.android.questopiabundle.utils.FileUtil.fromFullPath;
-import static org.qp.android.questopiabundle.utils.FileUtil.fromRelPath;
-import static org.qp.android.questopiabundle.utils.FileUtil.getFileContents;
-import static org.qp.android.questopiabundle.utils.FileUtil.isWritableFile;
-import static org.qp.android.questopiabundle.utils.FileUtil.writeFileContents;
-import static org.qp.android.questopiabundle.utils.HtmlUtil.getSrcDir;
-import static org.qp.android.questopiabundle.utils.HtmlUtil.isContainsHtmlTags;
-import static org.qp.android.questopiabundle.utils.HtmlUtil.removeHtmlTags;
-import static org.qp.android.questopiabundle.utils.PathUtil.getFilename;
-import static org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath;
-import static org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty;
-import static org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank;
-import static org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread;
+import android.content.Context
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
+import android.util.Log
+import androidx.documentfile.provider.DocumentFile
+import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
+import org.libndkqsp.jni.NDKLib
+import org.qp.android.questopiabundle.GameInterface
+import org.qp.android.questopiabundle.dto.LibListItem
+import org.qp.android.questopiabundle.dto.LibMenuItem
+import org.qp.android.questopiabundle.lib.LibGameState
+import org.qp.android.questopiabundle.lib.LibIProxy
+import org.qp.android.questopiabundle.lib.LibRefIRequest
+import org.qp.android.questopiabundle.lib.LibTypeDialog
+import org.qp.android.questopiabundle.lib.LibTypeWindow
+import org.qp.android.questopiabundle.utils.FileUtil.documentWrap
+import org.qp.android.questopiabundle.utils.FileUtil.fromFullPath
+import org.qp.android.questopiabundle.utils.FileUtil.fromRelPath
+import org.qp.android.questopiabundle.utils.FileUtil.getFileContents
+import org.qp.android.questopiabundle.utils.FileUtil.isWritableFile
+import org.qp.android.questopiabundle.utils.FileUtil.writeFileContents
+import org.qp.android.questopiabundle.utils.HtmlUtil.getSrcDir
+import org.qp.android.questopiabundle.utils.HtmlUtil.isContainsHtmlTags
+import org.qp.android.questopiabundle.utils.HtmlUtil.removeHtmlTags
+import org.qp.android.questopiabundle.utils.PathUtil.getFilename
+import org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath
+import org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty
+import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
+import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
+import java.util.*
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.Volatile
 
-import android.content.Context;
-import android.net.Uri;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.SystemClock;
-import android.util.Log;
+class LibBravoProxyImpl(
+    private val context: Context,
+    override val gameState: LibGameState = LibGameState()
+) : NDKLib(), LibIProxy {
 
-import androidx.annotation.NonNull;
-import androidx.documentfile.provider.DocumentFile;
+    private val TAG = javaClass.simpleName
+    private val libLock = ReentrantLock()
+    private lateinit var libThread: Thread
+    @Volatile private lateinit var libHandler: Handler
+    @Volatile private var libThreadInit = false
+    @Volatile private var gameStartTime: Long = 0L
+    @Volatile private var lastMsCountCallTime: Long = 0L
+    private lateinit var gameInterface: GameInterface
+    private val currGameDir: DocumentFile?
+        get() = fromUri(context, gameState.gameDirUri)
 
-import com.anggrayudi.storage.file.DocumentFileCompat;
-import com.anggrayudi.storage.file.MimeType;
-
-import org.qp.android.questopiabundle.GameInterface;
-import org.qp.android.questopiabundle.dto.LibListItem;
-import org.qp.android.questopiabundle.dto.LibMenuItem;
-import org.qp.android.questopiabundle.lib.LibGameState;
-import org.qp.android.questopiabundle.lib.LibIProxy;
-import org.qp.android.questopiabundle.lib.LibRefIRequest;
-import org.qp.android.questopiabundle.lib.LibTypeDialog;
-import org.qp.android.questopiabundle.lib.LibTypeWindow;
-import org.qp.android.questopiabundle.libbravo.NDKLib;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.concurrent.locks.ReentrantLock;
-
-public class LibBravoProxyImpl extends NDKLib implements LibIProxy {
-    private final String TAG = "LibProxyImpl";
-
-    private final ReentrantLock libLock = new ReentrantLock();
-    private final LibGameState gameState = new LibGameState();
-    private final Context context;
-    private Thread libThread;
-    private volatile Handler libHandler;
-    private volatile boolean libThreadInit;
-    private volatile long gameStartTime;
-    private volatile long lastMsCountCallTime;
-    private GameInterface gameInterface;
-
-    public LibBravoProxyImpl(Context context) {
-        this.context = context;
-    }
-
-    private DocumentFile getCurGameDir() {
-        return DocumentFileCompat.fromUri(context, gameState.gameDirUri);
-    }
-
-    private synchronized void runOnQspThread(final Runnable runnable) {
-        if (libThread == null) {
-            Log.w(TAG, "Lib thread has not been started!");
-            return;
-        }
+    @Synchronized
+    private fun runOnQspThread(runnable: Runnable) {
         if (!libThreadInit) {
-            Log.w(TAG, "Lib thread has been started, but not initialized!");
-            return;
+            Log.w(TAG, "Lib thread has been started, but not initialized!")
+            return
         }
-        var mLibHandler = libHandler;
-        if (mLibHandler == null) return;
-        mLibHandler.post(() -> {
-            libLock.lock();
+        val mLibHandler = libHandler
+        mLibHandler.post {
+            libLock.lock()
             try {
-                runnable.run();
+                runnable.run()
             } finally {
-                libLock.unlock();
+                libLock.unlock()
             }
-        });
+        }
     }
 
-    private boolean loadGameWorld() {
-        var gameFileUri = gameState.gameFileUri;
-        var gameFile = DocumentFileCompat.fromUri(context, gameState.gameFileUri);
-        if (gameFile == null) return false;
-        var gameFileFullPath = documentWrap(gameFile).getAbsolutePath(context);
-        var gameData = getFileContents(context, gameFileUri);
-        if (gameData == null) return false;
+    private fun loadGameWorld(): Boolean {
+        val gameFileUri = gameState.gameFileUri
+        val gameFile = fromUri(
+            context,
+            gameState.gameFileUri
+        )
+        if (gameFile == null) return false
+        val gameFileFullPath = documentWrap(gameFile).getAbsolutePath(context)
+        val gameData = getFileContents(context, gameFileUri) ?: return false
 
-        if (!QSPLoadGameWorldFromData(gameData, gameData.length, gameFileFullPath)) {
-            showLastQspError();
-            Log.d("QSP", "World is not loaded!");
-            return false;
+        if (!QSPLoadGameWorldFromData(gameData, gameFileFullPath)) {
+            showLastQspError()
+            Log.d("QSP", "World is not loaded!")
+            return false
         }
-        Log.d("QSP", "World is loaded!");
-        return true;
+        Log.d("QSP", "World is loaded!")
+        return true
     }
 
-    private void showLastQspError() {
-        var errorData = (ErrorData) QSPGetLastErrorData();
-        var locName = getStringOrEmpty(errorData.locName());
-        var desc = getStringOrEmpty(QSPGetErrorDesc(errorData.errorNum()));
-        final var message = String.format(
-                Locale.getDefault(),
-                "Location: %s\nAction: %d\nLine: %d\nError number: %d\nDescription: %s",
-                locName,
-                errorData.index(),
-                errorData.line(),
-                errorData.errorNum(),
-                desc);
-        Log.e(TAG, errorData.toString());
-        if (gameInterface != null) {
-            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, message);
-        }
+    private fun showLastQspError() {
+        val errorData = QSPGetLastErrorData() as ErrorData
+        val locName = getStringOrEmpty(errorData.locName)
+        val desc = getStringOrEmpty(QSPGetErrorDesc(errorData.errorNum))
+        val message = String.format(
+            Locale.getDefault(),
+            "Location: %s\nAction: %d\nLine: %d\nError number: %d\nDescription: %s",
+            locName,
+            errorData.index,
+            errorData.line,
+            errorData.errorNum,
+            desc
+        )
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, message)
     }
 
     /**
      * Loads the interface configuration - using HTML, font and colors - from the library.
      *
-     * @return <code>true</code> if the configuration has changed, otherwise <code>false</code>
+     * @return `true` if the configuration has changed, otherwise `false`
      */
-    private boolean loadInterfaceConfiguration() {
-        var config = gameState.interfaceConfig;
-        boolean changed = false;
+    private fun loadInterfaceConfiguration(): Boolean {
+        val config = gameState.interfaceConfig
+        var changed = false
 
-        var htmlResult = (VarValResp) QSPGetVarValues("USEHTML", 0);
-        if (htmlResult.isSuccess()) {
-            boolean useHtml = htmlResult.intValue() != 0;
+        val htmlResult = QSPGetVarValues("USEHTML", 0) as VarValResp
+        if (htmlResult.isSuccess) {
+            val useHtml = htmlResult.intValue != 0
             if (config.useHtml != useHtml) {
-                config.useHtml = useHtml;
-                changed = true;
+                config.useHtml = useHtml
+                changed = true
             }
         }
-        var fSizeResult = (VarValResp) QSPGetVarValues("FSIZE", 0);
-        if (fSizeResult.isSuccess() && config.fontSize != fSizeResult.intValue()) {
-            config.fontSize = fSizeResult.intValue();
-            changed = true;
+        val fSizeResult = QSPGetVarValues("FSIZE", 0) as VarValResp
+        if (fSizeResult.isSuccess && config.fontSize != fSizeResult.intValue.toLong()) {
+            config.fontSize = fSizeResult.intValue.toLong()
+            changed = true
         }
-        var bColorResult = (VarValResp) QSPGetVarValues("BCOLOR", 0);
-        if (bColorResult.isSuccess() && config.backColor != bColorResult.intValue()) {
-            config.backColor = bColorResult.intValue();
-            changed = true;
+        val bColorResult = QSPGetVarValues("BCOLOR", 0) as VarValResp
+        if (bColorResult.isSuccess && config.backColor != bColorResult.intValue.toLong()) {
+            config.backColor = bColorResult.intValue.toLong()
+            changed = true
         }
-        var fColorResult = (VarValResp) QSPGetVarValues("FCOLOR", 0);
-        if (fColorResult.isSuccess() && config.fontColor != fColorResult.intValue()) {
-            config.fontColor = fColorResult.intValue();
-            changed = true;
+        val fColorResult = QSPGetVarValues("FCOLOR", 0) as VarValResp
+        if (fColorResult.isSuccess && config.fontColor != fColorResult.intValue.toLong()) {
+            config.fontColor = fColorResult.intValue.toLong()
+            changed = true
         }
-        var lColorResult = (VarValResp) QSPGetVarValues("LCOLOR", 0);
-        if (lColorResult.isSuccess() && config.linkColor != lColorResult.intValue()) {
-            config.linkColor = lColorResult.intValue();
-            changed = true;
+        val lColorResult = QSPGetVarValues("LCOLOR", 0) as VarValResp
+        if (lColorResult.isSuccess && config.linkColor != lColorResult.intValue.toLong()) {
+            config.linkColor = lColorResult.intValue.toLong()
+            changed = true
         }
 
-        return changed;
+        return changed
     }
 
-    @NonNull
-    private ArrayList<LibListItem> getActionsList() {
-        var actions = new ArrayList<LibListItem>();
-        var count = QSPGetActionsCount();
+    private val actionsList: ArrayList<LibListItem>
+        get() {
+            val actions = ArrayList<LibListItem>()
+            val currGameDir = currGameDir
 
-        for (int i = 0; i < count; ++i) {
-            var action = new LibListItem();
-            var actionResult = (NDKLib.ListItem) QSPGetActionData(i);
-            var curGameDir = getCurGameDir();
-
-            if (actionResult.pathToImage == null) {
-                action.pathToImage = null;
-            } else {
-                var tempPath = normalizeContentPath(getFilename(actionResult.pathToImage));
-                var fileFromPath = fromRelPath(context, tempPath, curGameDir, false);
-                if (fileFromPath != null) {
-                    action.pathToImage = String.valueOf(fileFromPath.getUri());
-                } else {
-                    action.pathToImage = null;
+            for (element in QSPGetActionData()) {
+                val newElement = LibListItem(element)
+                if (isNotEmptyOrBlank(newElement.pathToImage) && currGameDir != null) {
+                    val tempPath =
+                        normalizeContentPath(getFilename(newElement.pathToImage))
+                    val fileFromPath =
+                        fromRelPath(context, tempPath, currGameDir, false)
+                    if (fileFromPath != null) {
+                        newElement.pathToImage = fileFromPath.uri.toString()
+                    } else {
+                        newElement.pathToImage = ""
+                    }
                 }
-            }
-            action.text = gameState.interfaceConfig.useHtml
-                    ? removeHtmlTags(actionResult.text)
-                    : actionResult.text;
-
-            actions.add(action);
-        }
-
-        return actions;
-    }
-
-    @NonNull
-    private ArrayList<LibListItem> getObjectsList() {
-        var objects = new ArrayList<LibListItem>();
-        var count = QSPGetObjectsCount();
-
-        for (int i = 0; i < count; i++) {
-            var object = new LibListItem();
-            var objectResult = (NDKLib.ListItem) QSPGetObjectData(i);
-            var curGameDir = getCurGameDir();
-
-            if (objectResult.text.contains("<img")) {
-                if (isContainsHtmlTags(objectResult.text)) {
-                    var tempPath = getSrcDir(objectResult.text);
-                    var fileFromPath = fromRelPath(context, tempPath, curGameDir, false);
-                    object.pathToImage = String.valueOf(fileFromPath);
+                newElement.text = if (gameState.interfaceConfig.useHtml) {
+                    removeHtmlTags(newElement.text)
                 } else {
-                    var fileFromPath = fromRelPath(context, objectResult.text, curGameDir, false);
-                    object.pathToImage = String.valueOf(fileFromPath);
+                    newElement.text
                 }
-            } else {
-                object.pathToImage = objectResult.pathToImage;
-                object.text = gameState.interfaceConfig.useHtml
-                        ? removeHtmlTags(objectResult.text)
-                        : objectResult.text;
+                actions.add(newElement)
             }
-            objects.add(object);
+
+            return actions
         }
 
-        return objects;
-    }
+    private val objectsList: ArrayList<LibListItem>
+        get() {
+            val objects = ArrayList<LibListItem>()
+            val currGameDir = currGameDir
+
+            for (element in QSPGetObjectData()) {
+                val newElement = LibListItem(element)
+                if (newElement.text.contains("<img") && currGameDir != null) {
+                    if (isContainsHtmlTags(newElement.text)) {
+                        val tempPath = getSrcDir(newElement.text)
+                        val fileFromPath =
+                            fromRelPath(context, tempPath, currGameDir, false)
+                        newElement.pathToImage = fileFromPath.toString()
+                    } else {
+                        val fileFromPath =
+                            fromRelPath(context, newElement.text, currGameDir, false)
+                        newElement.pathToImage = fileFromPath.toString()
+                    }
+                } else {
+                    newElement.text = if (gameState.interfaceConfig.useHtml)
+                        removeHtmlTags(newElement.text)
+                    else
+                        newElement.text
+                }
+                objects.add(newElement)
+            }
+
+            return objects
+        }
 
     // region LibQpProxy
-
-    public void startLibThread() {
-        libThread = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
+    override fun startLibThread() {
+        libThread = Thread({
+            while (!Thread.currentThread().isInterrupted) {
                 try {
-                    QSPInit();
+                    QSPInit()
                     if (Looper.myLooper() == null) {
-                        Looper.prepare();
+                        Looper.prepare()
                     }
-                    libHandler = new Handler(Looper.myLooper());
-                    libThreadInit = true;
-                    Looper.loop();
-                    QSPDeInit();
-                } catch (Throwable t) {
-                    Log.e(TAG, "lib thread has stopped exceptionally", t);
-                    Thread.currentThread().interrupt();
+                    libHandler = Handler(Looper.myLooper()!!)
+                    libThreadInit = true
+                    Looper.loop()
+                    QSPDeInit()
+                } catch (t: Throwable) {
+                    Log.e(TAG, "lib thread has stopped exceptionally", t)
+                    Thread.currentThread().interrupt()
                 }
             }
-        }, "libNDKQSP");
-        libThread.start();
+        }, "libNDKQSP")
+        libThread.start()
     }
 
-    public synchronized void stopLibThread() {
-        if (libThread == null) return;
+    @Synchronized
+    override fun stopLibThread() {
         if (libThreadInit) {
-            var handler = libHandler;
-            if (handler != null) {
-                handler.getLooper().quitSafely();
-            }
-            libThreadInit = false;
+            val handler = libHandler
+            handler.looper.quitSafely()
+            libThreadInit = false
         } else {
-            Log.w(TAG, "lib thread has been started, but not initialized");
+            Log.w(TAG, "lib thread has been started, but not initialized")
         }
-        libThread.interrupt();
+        libThread.interrupt()
     }
 
-    public void enableDebugMode(boolean isDebug) {
-        runOnQspThread(() -> enableDebugMode(isDebug));
+    override fun enableDebugMode(isDebug: Boolean) {
+        runOnQspThread { enableDebugMode(isDebug) }
     }
 
-    @Override
-    public void runGame(long gameId,
-                        String gameTitle,
-                        Uri gameDirUri,
-                        Uri gameFileUri) {
-        runOnQspThread(() -> doRunGame(gameId, gameTitle, gameDirUri, gameFileUri));
+    override fun runGame(
+        gameId: Long,
+        gameTitle: String,
+        gameDirUri: Uri,
+        gameFileUri: Uri
+    ) {
+        runOnQspThread { doRunGame(gameId, gameTitle, gameDirUri, gameFileUri) }
     }
 
-    @Override
-    public void restartGame() {
-        runOnQspThread(() -> doRunGame(gameState.gameId, gameState.gameTitle, gameState.gameDirUri, gameState.gameFileUri));
+    override fun restartGame() {
+        runOnQspThread {
+            doRunGame(
+                gameState.gameId,
+                gameState.gameTitle,
+                gameState.gameDirUri,
+                gameState.gameFileUri
+            )
+        }
     }
 
-    private void doRunGame(final long id, final String title, final Uri dir, final Uri file) {
-        gameInterface.doWithCounterDisabled(() -> {
-            gameInterface.closeAllFiles();
-            gameState.reset();
-            gameState.gameRunning = true;
-            gameState.gameId = id;
-            gameState.gameTitle = title;
-            gameState.gameDirUri = dir;
-            gameState.gameFileUri = file;
-            gameInterface.doChangeCurrGameDir(dir);
-            if (!loadGameWorld()) return;
-            gameStartTime = SystemClock.elapsedRealtime();
-            lastMsCountCallTime = 0;
+    private fun doRunGame(id: Long, title: String, dir: Uri, file: Uri) {
+        gameInterface.doWithCounterDisabled {
+            gameInterface.closeAllFiles()
+            gameState.reset()
+            gameState.gameRunning = true
+            gameState.gameId = id
+            gameState.gameTitle = title
+            gameState.gameDirUri = dir
+            gameState.gameFileUri = file
+            gameInterface.doChangeCurrGameDir(dir)
+            if (!loadGameWorld()) return@doWithCounterDisabled
+            gameStartTime = SystemClock.elapsedRealtime()
+            lastMsCountCallTime = 0
             if (!QSPRestartGame(true)) {
-                showLastQspError();
+                showLastQspError()
             }
-        });
-    }
-
-    @Override
-    public void loadGameState(final Uri uri) {
-        if (!isSameThread(libHandler.getLooper().getThread())) {
-            runOnQspThread(() -> loadGameState(uri));
-            return;
-        }
-        final var gameData = getFileContents(context, uri);
-        if (gameData == null) return;
-        if (!QSPOpenSavedGameFromData(gameData, gameData.length, true)) {
-            showLastQspError();
         }
     }
 
-    @Override
-    public void saveGameState(final Uri uri) {
-        if (!isSameThread(libHandler.getLooper().getThread())) {
-            runOnQspThread(() -> saveGameState(uri));
-            return;
+    override fun loadGameState(uri: Uri) {
+        if (!isSameThread(libHandler.looper.thread)) {
+            runOnQspThread { loadGameState(uri) }
+            return
         }
-        final var gameData = QSPSaveGameAsData(false);
-        if (gameData == null) return;
-        writeFileContents(context, uri, gameData);
+
+        gameInterface.requestPermFile(uri)
+        val gameData = getFileContents(context, uri) ?: return
+        if (!QSPOpenSavedGameFromData(gameData, gameData.size, true)) {
+            showLastQspError()
+        }
     }
 
-    @Override
-    public void onActionClicked(final int index) {
-        runOnQspThread(() -> {
+    override fun saveGameState(uri: Uri) {
+        if (!isSameThread(libHandler.looper.thread)) {
+            runOnQspThread { saveGameState(uri) }
+            return
+        }
+
+        val gameData = QSPSaveGameAsData(false) ?: return
+        gameInterface.requestPermFile(uri)
+        writeFileContents(context, uri, gameData)
+    }
+
+    override fun onActionClicked(index: Int) {
+        runOnQspThread {
             if (!QSPSetSelActionIndex(index, false)) {
-                showLastQspError();
+                showLastQspError()
             }
             if (!QSPExecuteSelActionCode(true)) {
-                showLastQspError();
+                showLastQspError()
             }
-        });
+        }
     }
 
-    @Override
-    public void onObjectSelected(final int index) {
-        runOnQspThread(() -> {
+    override fun onObjectSelected(index: Int) {
+        runOnQspThread {
             if (!QSPSetSelObjectIndex(index, true)) {
-                showLastQspError();
+                showLastQspError()
             }
-        });
+        }
     }
 
-    @Override
-    public void onInputAreaClicked() {
-        if (gameInterface == null) return;
-        runOnQspThread(() -> {
-            var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle");
-            if (doShow == null) return;
-            var input = doShow.outTextValue;
-            QSPSetInputStrText(input);
+    override fun onInputAreaClicked() {
+        runOnQspThread {
+            val doShow =
+                gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle")
+                    ?: return@runOnQspThread
+            val input = doShow.outTextValue
+            QSPSetInputStrText(input)
             if (!QSPExecUserInput(true)) {
-                showLastQspError();
+                showLastQspError()
             }
-        });
+        }
     }
 
-    @Override
-    public void onUseExecutorString() {
-        if (gameInterface == null) return;
-        runOnQspThread(() -> {
-            var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle");
-            if (doShow == null) return;
-            var input = doShow.outTextValue;
+    override fun onUseExecutorString() {
+        runOnQspThread {
+            val doShow =
+                gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle")
+                    ?: return@runOnQspThread
+            val input = doShow.outTextValue
             if (!QSPExecString(input, true)) {
-                showLastQspError();
+                showLastQspError()
             }
-        });
+        }
     }
 
-    @Override
-    public void execute(final String code) {
-        runOnQspThread(() -> {
+    override fun execute(code: String?) {
+        runOnQspThread {
             if (!QSPExecString(code, true)) {
-                showLastQspError();
+                showLastQspError()
             }
-        });
+        }
     }
 
-    @Override
-    public void executeCounter() {
-        if (libLock.isLocked()) return;
-        runOnQspThread(() -> {
+    override fun executeCounter() {
+        if (libLock.isLocked) return
+        runOnQspThread {
             if (!QSPExecCounter(true)) {
-                showLastQspError();
+                showLastQspError()
             }
-        });
+        }
     }
 
-    @Override
-    public LibGameState getGameState() {
-        return gameState;
-    }
-
-    @Override
-    public void setGameInterface(GameInterface inter) {
-        this.gameInterface = inter;
+    override fun setGameInterface(inter: GameInterface) {
+        this.gameInterface = inter
     }
 
     // endregion LibQpProxy
-
     // region LibQpCallbacks
-
-    @Override
-    public void RefreshInt() {
-        var request = new LibRefIRequest();
-        var configChanged = loadInterfaceConfiguration();
+    override fun RefreshInt() {
+        val request = LibRefIRequest()
+        val configChanged = loadInterfaceConfiguration()
 
         if (configChanged) {
-            request.isIConfigChanged = true;
+            request.isIConfigChanged = true
         }
         if (QSPIsMainDescChanged()) {
-            if (gameState.mainDesc != null) {
-                if (!gameState.mainDesc.equals(QSPGetMainDesc())) {
-                    gameState.mainDesc = QSPGetMainDesc();
-                    request.isMainDescChanged = true;
-                }
-            } else {
-                gameState.mainDesc = QSPGetMainDesc();
-                request.isMainDescChanged = true;
+            if (gameState.mainDesc != QSPGetMainDesc()) {
+                gameState.mainDesc = QSPGetMainDesc()
+                request.isMainDescChanged = true
             }
         }
         if (QSPIsActionsChanged()) {
-            if (gameState.actionsList != null) {
-                if (gameState.actionsList != getActionsList()) {
-                    gameState.actionsList = getActionsList();
-                    request.isActionsChanged = true;
-                }
-            } else {
-                gameState.actionsList = getActionsList();
-                request.isActionsChanged = true;
+            if (gameState.actionsList !== actionsList) {
+                gameState.actionsList = actionsList
+                request.isActionsChanged = true
             }
         }
         if (QSPIsObjectsChanged()) {
-            if (gameState.objectsList != null) {
-                if (gameState.objectsList != getObjectsList()) {
-                    gameState.objectsList = getObjectsList();
-                    request.isObjectsChanged = true;
-                }
-            } else {
-                gameState.objectsList = getObjectsList();
-                request.isObjectsChanged = true;
+            if (gameState.objectsList !== objectsList) {
+                gameState.objectsList = objectsList
+                request.isObjectsChanged = true
             }
         }
         if (QSPIsVarsDescChanged()) {
-            if (gameState.varsDesc != null) {
-                if (!gameState.varsDesc.equals(QSPGetVarsDesc())) {
-                    gameState.varsDesc = QSPGetVarsDesc();
-                    request.isVarsDescChanged = true;
-                }
-            } else {
-                gameState.varsDesc = QSPGetVarsDesc();
-                request.isVarsDescChanged = true;
+            if (gameState.varsDesc != QSPGetVarsDesc()) {
+                gameState.varsDesc = QSPGetVarsDesc() ?: ""
+                request.isVarsDescChanged = true
             }
         }
 
-        var inter = gameInterface;
-        if (inter != null) {
-            inter.doRefresh(request);
-        }
+        val inter = gameInterface
+        inter.doRefresh(request)
     }
 
-    @Override
-    public void ShowPicture(String path) {
-        var inter = gameInterface;
-        if (inter == null) return;
-        if (!isNotEmptyOrBlank(path)) return;
-        inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path);
+    override fun ShowPicture(path: String) {
+        val inter = gameInterface
+        if (!isNotEmptyOrBlank(path)) return
+        inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
     }
 
-    @Override
-    public void SetTimer(int msecs) {
-        var inter = gameInterface;
-        if (inter == null) return;
-        inter.setCountInter(msecs);
+    override fun SetTimer(msecs: Int) {
+        val inter = gameInterface
+        inter.setCountInter(msecs)
     }
 
-    @Override
-    public void ShowMessage(String message) {
-        var inter = gameInterface;
-        if (inter == null) return;
-        inter.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, message);
+    override fun ShowMessage(message: String) {
+        val inter = gameInterface
+        inter.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, message)
     }
 
-    @Override
-    public void PlayFile(String path, int volume) {
-        if (gameInterface == null) return;
-        if (!isNotEmptyOrBlank(path)) return;
-        gameInterface.playFile(path, volume);
+    override fun PlayFile(path: String, volume: Int) {
+        if (!isNotEmptyOrBlank(path)) return
+        gameInterface.playFile(path, volume)
     }
 
-    @Override
-    public boolean IsPlayingFile(final String path) {
-        if (gameInterface == null) return false;
-        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path);
+    override fun IsPlayingFile(path: String): Boolean {
+        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path)
     }
 
-    @Override
-    public void CloseFile(String path) {
-        if (gameInterface == null) return;
+    override fun CloseFile(path: String) {
         if (isNotEmptyOrBlank(path)) {
-            gameInterface.closeFile(path);
+            gameInterface.closeFile(path)
         } else {
-            gameInterface.closeAllFiles();
+            gameInterface.closeAllFiles()
         }
     }
 
-    @Override
-    public void OpenGame(String filename) {
+    override fun OpenGame(filename: String?) {
         if (filename == null) {
-            if (gameInterface == null) return;
-            gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null);
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
-            if (gameInterface == null) return;
             try {
-                var saveFile = fromFullPath(context, filename);
+                val saveFile = fromFullPath(context, filename) ?: return
+                gameInterface.requestPermFile(saveFile.uri)
                 if (isWritableFile(context, saveFile)) {
-                    if (saveFile == null) return;
-                    gameInterface.doWithCounterDisabled(() -> loadGameState(saveFile.getUri()));
+                    gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
                 } else {
-                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found");
-                    Log.e(TAG, "Save file not found");
+                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
                 }
-            } catch (Exception e) {
-                if (gameInterface != null) {
-                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, e.toString());
-                }
-                Log.e(TAG, "Error: ", e);
+            } catch (e: Exception) {
+                gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, e.toString())
             }
         }
     }
 
-    @Override
-    public void SaveGame(String filename) {
+    override fun SaveGame(filename: String?) {
         if (filename == null) {
-            if (gameInterface == null) return;
-            gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null);
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null)
         } else {
-            var save = new File(filename);
-            var saveFile = findOrCreateFile(context, getCurGameDir(), save.getName(), MimeType.TEXT);
-            if (isWritableFile(context, saveFile)) {
-                if (saveFile == null) return;
-                saveGameState(saveFile.getUri());
+            val currGameDir = currGameDir ?: return
+            val saveFileUri = gameInterface.requestCreateFile(currGameDir.uri, filename)
+            if (saveFileUri != Uri.EMPTY) {
+                saveGameState(saveFileUri)
             } else {
-                if (gameInterface != null) {
-                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir");
-                }
-                Log.e(TAG, "Error access dir");
+                gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
+                Log.e(TAG, "Error access dir")
             }
         }
     }
 
-    @Override
-    public String InputBox(String prompt) {
-        if (gameInterface == null) return "";
-        var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, prompt);
-        if (doShow == null) return "";
-        return doShow.outTextValue;
+    override fun InputBox(prompt: String): String {
+        val doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, prompt) ?: return ""
+        return doShow.outTextValue
     }
 
-    @Override
-    public int GetMSCount() {
-        var now = SystemClock.elapsedRealtime();
-        if (lastMsCountCallTime == 0) {
-            lastMsCountCallTime = gameStartTime;
+    override fun GetMSCount(): Int {
+        val now = SystemClock.elapsedRealtime()
+        if (lastMsCountCallTime == 0L) {
+            lastMsCountCallTime = gameStartTime
         }
-        var dt = (int) (now - lastMsCountCallTime);
-        lastMsCountCallTime = now;
-        return dt;
+        val dt = (now - lastMsCountCallTime).toInt()
+        lastMsCountCallTime = now
+        return dt
     }
 
-    @Override
-    public void AddMenuItem(String name, String imgPath) {
-        var item = new LibMenuItem();
-        item.name = name;
-        item.pathToImage = imgPath;
-        gameState.menuItemsList.add(item);
+    override fun AddMenuItem(name: String, imgPath: String) {
+        val item = LibMenuItem()
+        item.name = name
+        item.pathToImage = imgPath
+        gameState.menuItemsList.add(item)
     }
 
-    @Override
-    public void ShowMenu() {
-        if (gameInterface == null) return;
-        var doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_MENU, null);
-        if (doShow == null) return;
-        var result = doShow.outNumValue;
+    override fun ShowMenu() {
+        val doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_MENU, null) ?: return
+        val result = doShow.outNumValue
         if (result != -1) {
-            QSPSelectMenuItem(result);
+            QSPSelectMenuItem(result)
         }
     }
 
-    @Override
-    public void DeleteMenu() {
-        gameState.menuItemsList.clear();
+    override fun DeleteMenu() {
+        gameState.menuItemsList.clear()
     }
 
-    @Override
-    public void Wait(int msecs) {
+    override fun Wait(msecs: Int) {
         try {
-            Thread.sleep(msecs);
-        } catch (InterruptedException ex) {
-            Log.e(TAG,"Wait failed", ex);
+            Thread.sleep(msecs.toLong())
+        } catch (ex: InterruptedException) {
+            Log.e(TAG, "Wait failed", ex)
         }
     }
 
-    @Override
-    public void ShowWindow(int type, boolean isShow) {
-        if (gameInterface == null) return;
-        var windowType = LibTypeWindow.values()[type];
-        gameInterface.changeVisWindow(windowType, isShow);
+    override fun ShowWindow(type: Int, isShow: Boolean) {
+        val windowType = LibTypeWindow.entries[type]
+        gameInterface.changeVisWindow(windowType, isShow)
     }
 
-    @Override
-    public byte[] GetFileContents(String path) {
-        var targetFile = fromFullPath(context, path);
-        if (targetFile == null) return null;
-        var targetFileUri = targetFile.getUri();
-        return getFileContents(context , targetFileUri);
+    override fun GetFileContents(path: String): ByteArray? {
+        val targetFile = fromFullPath(context, path) ?: return null
+        val targetFileUri = targetFile.uri
+        gameInterface.requestPermFile(targetFileUri)
+        return getFileContents(context, targetFileUri)!!
     }
 
-    @Override
-    public void ChangeQuestPath(String path) {
-        var newGameDir = fromFullPath(context, path);
+    override fun ChangeQuestPath(path: String) {
+        val newGameDir = fromFullPath(context, path)
         if (newGameDir == null || !newGameDir.exists()) {
-            Log.e(TAG,"Game directory not found: " + path);
-            return;
+            Log.e(TAG, "Game directory not found: $path")
+            return
         }
-        var currGameDirUri = getCurGameDir().getUri();
-        var newGameDirUri = newGameDir.getUri();
-        if (!Objects.equals(currGameDirUri, newGameDirUri)) {
-            gameState.gameDirUri = newGameDirUri;
-            gameInterface.doChangeCurrGameDir(newGameDirUri);
+        val currGameDirUri = currGameDir?.uri
+        val newGameDirUri = newGameDir.uri
+        if (currGameDirUri != newGameDirUri) {
+            gameState.gameDirUri = newGameDirUri
+            gameInterface.doChangeCurrGameDir(newGameDirUri)
         }
-    }
-
-    // endregion LibQpCallbacks
+    } // endregion LibQpCallbacks
 }

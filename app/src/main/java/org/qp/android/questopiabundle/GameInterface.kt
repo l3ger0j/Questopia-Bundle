@@ -1,37 +1,27 @@
-package org.qp.android.questopiabundle;
+package org.qp.android.questopiabundle
 
-import android.net.Uri;
+import android.net.Uri
+import org.qp.android.questopiabundle.lib.LibRefIRequest
+import org.qp.android.questopiabundle.lib.LibTypeDialog
+import org.qp.android.questopiabundle.lib.LibTypeWindow
 
-import org.qp.android.questopiabundle.lib.LibRefIRequest;
-import org.qp.android.questopiabundle.lib.LibTypeDialog;
-import org.qp.android.questopiabundle.lib.LibTypeWindow;
-
-public interface GameInterface {
-
-    boolean isPlayingFile(String filePath);
-
-    void closeAllFiles();
-
-    void closeFile(String filePath);
-
-    void playFile(String path, int volume);
-
-    void doChangeCurrGameDir(Uri newGameDirUri);
-
-    void doRefresh(LibRefIRequest request);
-
-    LibDialogRetValue showLibDialog(LibTypeDialog dialog, String inputString);
-
-    void changeVisWindow(LibTypeWindow type, boolean show);
-
+interface GameInterface {
+    fun requestPermFile(pathUri: Uri)
+    fun requestCreateFile(dirUri: Uri, path: String): Uri
+    fun isPlayingFile(filePath: String): Boolean
+    fun closeAllFiles()
+    fun closeFile(filePath: String?)
+    fun playFile(path: String?, volume: Int)
+    fun doChangeCurrGameDir(newGameDirUri: Uri?)
+    fun doRefresh(request: LibRefIRequest?)
+    fun showLibDialog(dialog: LibTypeDialog?, inputString: String?): LibDialogRetValue?
+    fun changeVisWindow(type: LibTypeWindow?, show: Boolean)
     /**
-     * Set the counter location processing interval to <code>delayMillis</code> milliseconds.
+     * Set the counter location processing interval to `delayMillis` milliseconds.
      */
-    void setCountInter(int delayMillis);
-
+    fun setCountInter(delayMillis: Int)
     /**
-     * Execute <code>runnable</code> without processing the location counter.
+     * Execute `runnable` without processing the location counter.
      */
-    void doWithCounterDisabled(Runnable runnable);
-
+    fun doWithCounterDisabled(runnable: Runnable?)
 }

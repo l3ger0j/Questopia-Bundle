@@ -1,11 +1,9 @@
-package org.qp.android.questopiabundle.lib;
+package org.qp.android.questopiabundle.lib
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.Parcel
+import android.os.Parcelable
 
-import androidx.annotation.NonNull;
-
-public enum LibGameRequest implements Parcelable {
+enum class LibGameRequest : Parcelable {
     LOAD_FILE,
     SAVE_FILE,
     USE_EXECUTOR,
@@ -14,25 +12,21 @@ public enum LibGameRequest implements Parcelable {
     EXECUTE_CODE,
     ;
 
-    public static final Creator<LibGameRequest> CREATOR = new Creator<>() {
-        @Override
-        public LibGameRequest createFromParcel(Parcel in) {
-            return LibGameRequest.valueOf(in.readString());
-        }
-
-        @Override
-        public LibGameRequest[] newArray(int size) {
-            return new LibGameRequest[size];
-        }
-    };
-
-    @Override
-    public int describeContents() {
-        return 0;
+    override fun describeContents(): Int {
+        return 0
     }
 
-    @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(name());
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        dest.writeString(name)
+    }
+
+    companion object CREATOR : Parcelable.Creator<LibGameRequest> {
+        override fun createFromParcel(source: Parcel): LibGameRequest {
+            return LibGameRequest.valueOf(source.readString()!!)
+        }
+
+        override fun newArray(size: Int): Array<LibGameRequest?> {
+            return arrayOfNulls(size)
+        }
     }
 }

@@ -1,8 +1,6 @@
 package org.qp.android.questopiabundle.utils
 
 object PathUtil {
-
-    @JvmStatic
     fun getFilename(path: String): String {
         val idx = path.lastIndexOf('/')
         return if (idx == -1) path else path.substring(idx + 1)
@@ -13,7 +11,6 @@ object PathUtil {
      *
      * @implNote Removes "./" from the beginning of the path, replaces all occurrences of "\" with "/".
      */
-    @JvmStatic
     fun normalizeContentPath(path: String?): String {
         if (path == null) return ""
         var result: String = path

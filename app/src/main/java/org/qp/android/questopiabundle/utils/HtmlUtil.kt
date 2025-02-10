@@ -6,7 +6,6 @@ import org.qp.android.questopiabundle.utils.StringUtil.isNullOrEmpty
 import java.util.regex.Pattern
 
 object HtmlUtil {
-
     private val HTML_PATTERN: Pattern = Pattern.compile("<(\"[^\"]*\"|'[^']*'|[^'\">])*>")
 
     @JvmStatic

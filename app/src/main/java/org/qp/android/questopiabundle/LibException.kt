@@ -1,60 +1,39 @@
-package org.qp.android.questopiabundle;
+package org.qp.android.questopiabundle
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.Parcel
+import android.os.Parcelable
 
-public class LibException implements Parcelable {
+class LibException(
+    private val errorMessage: String?,
+    private val errorCode: Int = RUNTIME_EXCEPTION
+) : Parcelable {
 
-    public static final int RUNTIME_EXCEPTION = 1000;
-    public static final int ARITHMETIC_EXCEPTION = 1001;
-    public static final Creator<LibException> CREATOR = new Creator<>() {
-        @Override
-        public LibException createFromParcel(Parcel in) {
-            return new LibException(in);
-        }
+    constructor(parcel: Parcel) : this(parcel.readString(), parcel.readInt())
 
-        @Override
-        public LibException[] newArray(int size) {
-            return new LibException[size];
-        }
-    };
-
-    private final String errorMessage;
-    private final int errorCode;
-
-    public LibException(String errorMessage) {
-        this(errorMessage, RUNTIME_EXCEPTION);
-    }
-
-    public LibException(String errorMessage, int errorCode) {
-        this.errorMessage = errorMessage;
-        this.errorCode = errorCode;
-    }
-
-    protected LibException(Parcel in) {
-        errorMessage = in.readString();
-        errorCode = in.readInt();
-    }
-
-    public Exception toException() {
-        switch (errorCode) {
-            case RUNTIME_EXCEPTION:
-                return new RuntimeException(errorMessage);
-            case ARITHMETIC_EXCEPTION:
-                return new ArithmeticException(errorMessage);
-            default:
-                return new RuntimeException(errorMessage);
+    fun toException(): Exception {
+        return when (errorCode) {
+            RUNTIME_EXCEPTION -> RuntimeException(errorMessage)
+            else -> RuntimeException(errorMessage)
         }
     }
 
-    @Override
-    public int describeContents() {
-        return 0;
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeString(errorMessage)
+        parcel.writeInt(errorCode)
     }
 
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(errorMessage);
-        dest.writeInt(errorCode);
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    companion object CREATOR : Parcelable.Creator<LibException> {
+        const val RUNTIME_EXCEPTION: Int = 1000
+        override fun createFromParcel(parcel: Parcel): LibException {
+            return LibException(parcel)
+        }
+
+        override fun newArray(size: Int): Array<LibException?> {
+            return arrayOfNulls(size)
+        }
     }
 }

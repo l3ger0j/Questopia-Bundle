@@ -1,365 +1,376 @@
-package org.qp.android.questopiabundle;
+package org.qp.android.questopiabundle
 
-import android.app.Service;
-import android.content.Intent;
-import android.net.Uri;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.RemoteException;
-import android.util.Log;
+import android.app.Service
+import android.content.Intent
+import android.net.Uri
+import android.os.Handler
+import android.os.IBinder
+import android.os.Looper
+import android.os.RemoteException
+import android.util.Log
+import com.anggrayudi.storage.file.DocumentFileCompat.getAccessibleAbsolutePaths
+import org.qp.android.questopiabundle.lib.LibGameRequest
+import org.qp.android.questopiabundle.lib.LibGameState
+import org.qp.android.questopiabundle.lib.LibRefIRequest
+import org.qp.android.questopiabundle.lib.LibTypeDialog
+import org.qp.android.questopiabundle.lib.LibTypeWindow
+import org.qp.android.questopiabundle.lib.impl.LibAlphaProxyImpl
+import org.qp.android.questopiabundle.lib.impl.LibBravoProxyImpl
+import org.qp.android.questopiabundle.lib.impl.LibCharlieProxyImpl
+import kotlin.concurrent.Volatile
 
-import androidx.annotation.Nullable;
+class QuestopiaBundle : Service(), GameInterface {
+    private val counterHandler = Handler(Looper.myLooper() ?: Looper.getMainLooper())
+    private val counterNDKHandler = Handler(Looper.myLooper() ?: Looper.getMainLooper())
+    private val counterSNXHandler = Handler(Looper.myLooper() ?: Looper.getMainLooper())
+    private lateinit var libAlphaProxy: LibAlphaProxyImpl
+    private lateinit var libBravoProxy: LibBravoProxyImpl
+    private lateinit var libCharlieProxy: LibCharlieProxyImpl
+    private var callbacks: AsyncCallbacks? = null
 
-import com.anggrayudi.storage.file.DocumentFileCompat;
-
-import org.qp.android.questopiabundle.lib.LibGameRequest;
-import org.qp.android.questopiabundle.lib.impl.LibBravoProxyImpl;
-import org.qp.android.questopiabundle.lib.impl.LibAlphaProxyImpl;
-import org.qp.android.questopiabundle.lib.LibRefIRequest;
-import org.qp.android.questopiabundle.lib.LibTypeDialog;
-import org.qp.android.questopiabundle.lib.LibTypeWindow;
-import org.qp.android.questopiabundle.lib.impl.LibCharlieProxyImpl;
-
-public class QuestopiaBundle extends Service implements GameInterface {
-
-    private final Handler counterHandler = new Handler();
-    private final Handler counterNDKHandler = new Handler();
-    private final Handler counterSNXHandler = new Handler();
-    private LibAlphaProxyImpl libAlphaProxy;
-    private LibBravoProxyImpl libBravoProxy;
-    private LibCharlieProxyImpl libCharlieProxy;
-    private AsyncCallbacks callbacks;
-    private volatile int counterInterval = 500;
-    private final Runnable counterTask = new Runnable() {
-        @Override
-        public void run() {
-            libAlphaProxy.executeCounter();
-            counterHandler.postDelayed(this, counterInterval);
+    @Volatile
+    private var counterInterval = 500
+    private val counterTask: Runnable = object : Runnable {
+        override fun run() {
+            libAlphaProxy.executeCounter()
+            counterHandler.postDelayed(this, counterInterval.toLong())
         }
-    };
-    private final Runnable counterNDKTask = new Runnable() {
-        @Override
-        public void run() {
-            libBravoProxy.executeCounter();
-            counterNDKHandler.postDelayed(this, counterInterval);
+    }
+    private val counterNDKTask: Runnable = object : Runnable {
+        override fun run() {
+            libBravoProxy.executeCounter()
+            counterNDKHandler.postDelayed(this, counterInterval.toLong())
         }
-    };
-    private final Runnable counterSNXTask = new Runnable() {
-        @Override
-        public void run() {
-            libCharlieProxy.executeCounter();
-            counterSNXHandler.postDelayed(this, counterInterval);
+    }
+    private val counterSNXTask: Runnable = object : Runnable {
+        override fun run() {
+            libCharlieProxy.executeCounter()
+            counterSNXHandler.postDelayed(this, counterInterval.toLong())
         }
-    };
-    private volatile int mLibVersion;
+    }
 
-    @Override
-    public boolean isPlayingFile(String filePath) {
+    @Volatile
+    private var mLibVersion = 0
+
+    override fun requestPermFile(pathUri: Uri) {
         try {
-            if (callbacks == null) return false;
-            return callbacks.isPlayingFile(filePath);
-        } catch (Exception e) {
-            Log.e(this.getClass().getSimpleName(), "Error", e);
-            return false;
+            callbacks?.requestPermOnFile(pathUri)
+        } catch (e: Exception) {
+            Log.e(javaClass.simpleName, "Error", e)
         }
     }
 
-    @Override
-    public void closeAllFiles() {
+    override fun requestCreateFile(dirUri: Uri, path: String): Uri {
         try {
-            if (callbacks == null) return;
-            callbacks.closeAllFiles();
-        } catch (Exception e) {
-            Log.e(this.getClass().getSimpleName(), "Error", e);
+            return callbacks?.requestCreateFile(dirUri, path) ?: Uri.EMPTY
+        } catch (e: Exception) {
+            Log.e(javaClass.simpleName, "Error", e)
+            return Uri.EMPTY
         }
     }
 
-    @Override
-    public void closeFile(String filePath) {
+    override fun isPlayingFile(filePath: String): Boolean {
         try {
-            if (callbacks == null) return;
-            callbacks.closeFile(filePath);
-        } catch (Exception e) {
-            Log.e(this.getClass().getSimpleName(), "Error", e);
+            return callbacks?.isPlayingFile(filePath) ?: false
+        } catch (e: Exception) {
+            Log.e(javaClass.simpleName, "Error", e)
+            return false
         }
     }
 
-    @Override
-    public void playFile(String path, int volume) {
+    override fun closeAllFiles() {
         try {
-            if (callbacks == null) return;
-            callbacks.playFile(path, volume);
-        } catch (Exception e) {
-            Log.e(this.getClass().getSimpleName(), "Error", e);
+            callbacks?.closeAllFiles()
+        } catch (e: Exception) {
+            Log.e(javaClass.simpleName, "Error", e)
         }
     }
 
-    public void setCallback() {
-        switch (mLibVersion) {
-            case 570 -> counterNDKHandler.postDelayed(counterNDKTask, counterInterval);
-            case 575 -> counterSNXHandler.postDelayed(counterSNXTask, counterInterval);
-            case 592 -> counterHandler.postDelayed(counterTask, counterInterval);
-        }
-    }
-
-    public void removeCallback() {
-        counterHandler.removeCallbacks(counterTask);
-        counterNDKHandler.removeCallbacks(counterNDKTask);
-        counterSNXHandler.removeCallbacks(counterSNXTask);
-    }
-
-    @Override
-    public void doChangeCurrGameDir(Uri newGameDirUri) {
-        if (callbacks == null) return;
-
+    override fun closeFile(filePath: String?) {
         try {
-            callbacks.sendChangeCurrGameDir(newGameDirUri);
-        } catch (Exception e) {
-            Log.e(this.getClass().getSimpleName(), "Error", e);
+            callbacks?.closeFile(filePath)
+        } catch (e: Exception) {
+            Log.e(javaClass.simpleName, "Error", e)
         }
     }
 
-    @Override
-    public void doRefresh(LibRefIRequest request) {
-        if (callbacks == null) return;
-
+    override fun playFile(path: String?, volume: Int) {
         try {
-            switch (mLibVersion) {
-                case 570 -> {
-                    callbacks.sendLibRef(new LibResult<>(request));
-                    callbacks.sendLibGameState(new LibResult<>(libBravoProxy.getGameState()));
+            callbacks?.playFile(path, volume)
+        } catch (e: Exception) {
+            Log.e(javaClass.simpleName, "Error", e)
+        }
+    }
+
+    fun setCallback() {
+        when (mLibVersion) {
+            570 -> counterNDKHandler.postDelayed(counterNDKTask, counterInterval.toLong())
+            575 -> counterSNXHandler.postDelayed(counterSNXTask, counterInterval.toLong())
+            592 -> counterHandler.postDelayed(counterTask, counterInterval.toLong())
+        }
+    }
+
+    private fun removeCallback() {
+        counterHandler.removeCallbacks(counterTask)
+        counterNDKHandler.removeCallbacks(counterNDKTask)
+        counterSNXHandler.removeCallbacks(counterSNXTask)
+    }
+
+    override fun doChangeCurrGameDir(newGameDirUri: Uri?) {
+        try {
+            callbacks?.sendChangeCurrGameDir(newGameDirUri)
+        } catch (e: Exception) {
+            Log.e(javaClass.simpleName, "Error", e)
+        }
+    }
+
+    override fun doRefresh(request: LibRefIRequest?) {
+        try {
+            when (mLibVersion) {
+                570 -> {
+                    callbacks?.sendLibRef(LibResult<LibRefIRequest?>(request))
+                    callbacks?.sendLibGameState(LibResult<LibGameState?>(libBravoProxy.gameState))
                 }
-                case 575 -> {
-                    callbacks.sendLibRef(new LibResult<>(request));
-                    callbacks.sendLibGameState(new LibResult<>(libCharlieProxy.getGameState()));
+
+                575 -> {
+                    callbacks?.sendLibRef(LibResult<LibRefIRequest?>(request))
+                    callbacks?.sendLibGameState(LibResult<LibGameState?>(libCharlieProxy.gameState))
                 }
-                case 592 -> {
-                    callbacks.sendLibRef(new LibResult<>(request));
-                    callbacks.sendLibGameState(new LibResult<>(libAlphaProxy.getGameState()));
+
+                592 -> {
+                    callbacks?.sendLibRef(LibResult<LibRefIRequest?>(request))
+                    callbacks?.sendLibGameState(LibResult<LibGameState?>(libAlphaProxy.gameState))
                 }
             }
-        } catch (Exception e) {
-            Log.e("QuestopiaBundle", "Error", e);
+        } catch (e: Exception) {
+            Log.e("QuestopiaBundle", "Error", e)
         }
     }
 
-    @Override
-    public LibDialogRetValue showLibDialog(LibTypeDialog dialog, String inputMessage) {
-        var wrap = new LibDialogRetValue();
-
-        if (callbacks == null) {
-            if (dialog == LibTypeDialog.DIALOG_MENU) {
-                wrap.outNumValue = -1;
-            } else {
-                wrap.outTextValue = "";
-            }
-            return wrap;
-        }
+    override fun showLibDialog(dialog: LibTypeDialog?, inputString: String?): LibDialogRetValue? {
+        val wrap = LibDialogRetValue()
 
         try {
-            return callbacks.doOnShowDialog(new LibResult<>(dialog), inputMessage);
-        } catch (RemoteException e) {
-            Log.e("QuestopiaBundle", "Error", e);
+            return callbacks?.doOnShowDialog(LibResult(dialog), inputString)
+        } catch (e: RemoteException) {
+            Log.e("QuestopiaBundle", "Error", e)
         }
 
         if (dialog == LibTypeDialog.DIALOG_MENU) {
-            wrap.outNumValue = -1;
+            wrap.outNumValue = -1
         } else {
-            wrap.outTextValue = "";
+            wrap.outTextValue = ""
         }
-        return wrap;
+
+        return wrap
     }
 
-    @Override
-    public void changeVisWindow(LibTypeWindow type, boolean show) {
-        if (callbacks == null) return;
+    override fun changeVisWindow(type: LibTypeWindow?, show: Boolean) {
         try {
-            callbacks.doChangeVisWindow(new LibResult<>(type), show);
-        } catch (RemoteException e) {
-            Log.e("QuestopiaBundle", "Error", e);
+            callbacks?.doChangeVisWindow(LibResult<LibTypeWindow?>(type), show)
+        } catch (e: RemoteException) {
+            Log.e("QuestopiaBundle", "Error", e)
         }
     }
 
-    @Override
-    public void setCountInter(int delayMillis) {
-        counterInterval = delayMillis;
+    override fun setCountInter(delayMillis: Int) {
+        counterInterval = delayMillis
     }
 
-    @Override
-    public void doWithCounterDisabled(Runnable runnable) {
-        switch (mLibVersion) {
-            case 570 -> {
-                counterNDKHandler.removeCallbacks(counterNDKTask);
-                runnable.run();
-                counterNDKHandler.postDelayed(counterNDKTask, counterInterval);
+    override fun doWithCounterDisabled(runnable: Runnable?) {
+        when (mLibVersion) {
+            570 -> {
+                counterNDKHandler.removeCallbacks(counterNDKTask)
+                runnable?.run()
+                counterNDKHandler.postDelayed(counterNDKTask, counterInterval.toLong())
             }
-            case 575 -> {
-                counterSNXHandler.removeCallbacks(counterSNXTask);
-                runnable.run();
-                counterSNXHandler.postDelayed(counterSNXTask, counterInterval);
+
+            575 -> {
+                counterSNXHandler.removeCallbacks(counterSNXTask)
+                runnable?.run()
+                counterSNXHandler.postDelayed(counterSNXTask, counterInterval.toLong())
             }
-            case 592 -> {
-                counterHandler.removeCallbacks(counterTask);
-                runnable.run();
-                counterHandler.postDelayed(counterTask, counterInterval);
+
+            592 -> {
+                counterHandler.removeCallbacks(counterTask)
+                runnable?.run()
+                counterHandler.postDelayed(counterTask, counterInterval.toLong())
             }
         }
     }
 
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return new IQuestopiaBundle.Stub() {
-            @Override
-            public String versionPlugin() throws RemoteException {
-                return BuildConfig.VERSION_NAME;
-            }
+    override fun onBind(intent: Intent): IBinder = object : IQuestopiaBundle.Stub() {
+        @Throws(RemoteException::class)
+        override fun versionPlugin(): String {
+            return BuildConfig.VERSION_NAME
+        }
 
-            @Override
-            public String titlePlugin() throws RemoteException {
-                return "Questopia Bundle";
-            }
+        @Throws(RemoteException::class)
+        override fun titlePlugin(): String {
+            return "Questopia Bundle"
+        }
 
-            @Override
-            public String authorPlugin() throws RemoteException {
-                return "l3ger0j";
-            }
+        @Throws(RemoteException::class)
+        override fun authorPlugin(): String {
+            return "l3ger0j"
+        }
 
-            @Override
-            public void startNativeLib(int libVer) throws RemoteException {
-                mLibVersion = libVer;
-                switch (mLibVersion) {
-                    case 570 -> {
-                        libBravoProxy = new LibBravoProxyImpl(QuestopiaBundle.this);
-                        setCallback();
+        @Throws(RemoteException::class)
+        override fun startNativeLib(libVer: Int) {
+            mLibVersion = libVer
+            when (mLibVersion) {
+                570 -> {
+                    libBravoProxy = LibBravoProxyImpl(this@QuestopiaBundle)
+                    setCallback()
 
-                        libBravoProxy.setGameInterface(QuestopiaBundle.this);
-                        libBravoProxy.startLibThread();
-                    }
-                    case 575 -> {
-                        libCharlieProxy = new LibCharlieProxyImpl(QuestopiaBundle.this);
-                        setCallback();
+                    libBravoProxy.setGameInterface(this@QuestopiaBundle)
+                    libBravoProxy.startLibThread()
+                }
 
-                        libCharlieProxy.setGameInterface(QuestopiaBundle.this);
-                        libCharlieProxy.startLibThread();
-                    }
-                    case 592 -> {
-                        libAlphaProxy = new LibAlphaProxyImpl(QuestopiaBundle.this);
-                        setCallback();
+                575 -> {
+                    libCharlieProxy = LibCharlieProxyImpl(this@QuestopiaBundle)
+                    setCallback()
 
-                        libAlphaProxy.setGameInterface(QuestopiaBundle.this);
-                        libAlphaProxy.startLibThread();
-                    }
+                    libCharlieProxy.setGameInterface(this@QuestopiaBundle)
+                    libCharlieProxy.startLibThread()
+                }
+
+                592 -> {
+                    libAlphaProxy = LibAlphaProxyImpl(this@QuestopiaBundle)
+                    setCallback()
+
+                    libAlphaProxy.setGameInterface(this@QuestopiaBundle)
+                    libAlphaProxy.startLibThread()
                 }
             }
+        }
 
-            @Override
-            public void stopNativeLib(int libVer) throws RemoteException {
-                mLibVersion = libVer;
-                switch (mLibVersion) {
-                    case 570 -> {
-                        libBravoProxy.setGameInterface(null);
-                        libBravoProxy.stopLibThread();
-                        libBravoProxy = null;
-                    }
-                    case 575 -> {
-                        libCharlieProxy.setGameInterface(null);
-                        libCharlieProxy.stopLibThread();
-                        libCharlieProxy = null;
-                    }
-                    case 592 -> {
-                        libAlphaProxy.setGameInterface(null);
-                        libAlphaProxy.stopLibThread();
-                        libAlphaProxy = null;
-                    }
-                }
-                stopSelf();
+        @Throws(RemoteException::class)
+        override fun stopNativeLib(libVer: Int) {
+            mLibVersion = libVer
+            when (mLibVersion) {
+                570 -> libBravoProxy.stopLibThread()
+
+                575 -> libCharlieProxy.stopLibThread()
+
+                592 -> libAlphaProxy.stopLibThread()
             }
+            stopSelf()
+        }
 
-            @Override
-            public void runGameIntoLib(long gameId,
-                                       String gameTitle,
-                                       Uri gameDirUri,
-                                       Uri gameFileUri) throws RemoteException {
-                Log.i(this.getClass().getSimpleName(), String.valueOf(DocumentFileCompat.getAccessibleAbsolutePaths(getBaseContext())));
-                Log.d(this.getClass().getSimpleName(), "Debug: " + "\nGameID|" + gameId + "\nGameTitle|" + gameTitle + "\nGameDirUri|" + gameDirUri + "\nGameFileUri|" + gameFileUri);
-                switch (mLibVersion) {
-                    case 570 -> libBravoProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri);
-                    case 575 -> libCharlieProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri);
-                    case 592 -> libAlphaProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri);
-                }
+        @Throws(RemoteException::class)
+        override fun runGameIntoLib(
+            gameId: Long,
+            gameTitle: String,
+            gameDirUri: Uri,
+            gameFileUri: Uri
+        ) {
+            Log.i(
+                javaClass.simpleName,
+                checkCallingPermission("android.permission.WRITE_EXTERNAL_STORAGE").toString()
+            )
+            Log.i(
+                javaClass.simpleName,
+                checkSelfPermission("android.permission.WRITE_EXTERNAL_STORAGE").toString()
+            )
+            Log.i(
+                javaClass.simpleName, getAccessibleAbsolutePaths(
+                    baseContext
+                ).toString()
+            )
+            Log.d(
+                javaClass.simpleName,
+                "Debug: \nGameID|$gameId\nGameTitle|$gameTitle\nGameDirUri|$gameDirUri\nGameFileUri|$gameFileUri"
+            )
+            when (mLibVersion) {
+                570 -> libBravoProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri)
+
+                575 -> libCharlieProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri)
+
+                592 -> libAlphaProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri)
             }
+        }
 
-            @Override
-            public void onActionClicked(int index) throws RemoteException {
-                switch (mLibVersion) {
-                    case 570 -> libBravoProxy.onActionClicked(index);
-                    case 575 -> libCharlieProxy.onActionClicked(index);
-                    case 592 -> libAlphaProxy.onActionClicked(index);
-                }
+        @Throws(RemoteException::class)
+        override fun onActionClicked(index: Int) {
+            when (mLibVersion) {
+                570 -> libBravoProxy.onActionClicked(index)
+
+                575 -> libCharlieProxy.onActionClicked(index)
+
+                592 -> libAlphaProxy.onActionClicked(index)
             }
+        }
 
-            @Override
-            public void onObjectClicked(int index) throws RemoteException {
-                switch (mLibVersion) {
-                    case 570 -> libBravoProxy.onObjectSelected(index);
-                    case 575 -> libCharlieProxy.onObjectSelected(index);
-                    case 592 -> libAlphaProxy.onObjectSelected(index);
-                }
+        @Throws(RemoteException::class)
+        override fun onObjectClicked(index: Int) {
+            when (mLibVersion) {
+                570 -> libBravoProxy.onObjectSelected(index)
+
+                575 -> libCharlieProxy.onObjectSelected(index)
+
+                592 -> libAlphaProxy.onObjectSelected(index)
             }
+        }
 
-            @Override
-            public void doLibRequest(LibResult gameRequest, String codeToExec, Uri fileUri) throws RemoteException {
-                switch (mLibVersion) {
-                    case 570 -> {
-                        var libGameReq = (LibGameRequest) gameRequest.value;
-                        switch (libGameReq) {
-                            case LOAD_FILE -> doWithCounterDisabled(() -> libBravoProxy.loadGameState(fileUri));
-                            case SAVE_FILE -> libBravoProxy.saveGameState(fileUri);
-                            case USE_EXECUTOR -> libBravoProxy.onUseExecutorString();
-                            case USE_INPUT -> libBravoProxy.onInputAreaClicked();
-                            case RESTART_GAME -> libBravoProxy.restartGame();
-                            case EXECUTE_CODE -> libBravoProxy.execute(codeToExec);
+        @Throws(RemoteException::class)
+        override fun doLibRequest(gameRequest: LibResult<*>, codeToExec: String, fileUri: Uri) {
+            when (mLibVersion) {
+                570 -> {
+                    val libGameReq = gameRequest.value as LibGameRequest
+                    when (libGameReq) {
+                        LibGameRequest.LOAD_FILE -> doWithCounterDisabled {
+                            libBravoProxy.loadGameState(fileUri)
                         }
+
+                        LibGameRequest.SAVE_FILE -> libBravoProxy.saveGameState(fileUri)
+                        LibGameRequest.USE_EXECUTOR -> libBravoProxy.onUseExecutorString()
+                        LibGameRequest.USE_INPUT -> libBravoProxy.onInputAreaClicked()
+                        LibGameRequest.RESTART_GAME -> libBravoProxy.restartGame()
+                        LibGameRequest.EXECUTE_CODE -> libBravoProxy.execute(codeToExec)
                     }
-                    case 575 -> {
-                        var libGameReq = (LibGameRequest) gameRequest.value;
-                        switch (libGameReq) {
-                            case LOAD_FILE -> doWithCounterDisabled(() -> libCharlieProxy.loadGameState(fileUri));
-                            case SAVE_FILE -> libCharlieProxy.saveGameState(fileUri);
-                            case USE_EXECUTOR -> libCharlieProxy.onUseExecutorString();
-                            case USE_INPUT -> libCharlieProxy.onInputAreaClicked();
-                            case RESTART_GAME -> libCharlieProxy.restartGame();
-                            case EXECUTE_CODE -> libCharlieProxy.execute(codeToExec);
+                }
+
+                575 -> {
+                    val libGameReq = gameRequest.value as LibGameRequest
+                    when (libGameReq) {
+                        LibGameRequest.LOAD_FILE -> doWithCounterDisabled {
+                            libCharlieProxy.loadGameState(fileUri)
                         }
+
+                        LibGameRequest.SAVE_FILE -> libCharlieProxy.saveGameState(fileUri)
+                        LibGameRequest.USE_EXECUTOR -> libCharlieProxy.onUseExecutorString()
+                        LibGameRequest.USE_INPUT -> libCharlieProxy.onInputAreaClicked()
+                        LibGameRequest.RESTART_GAME -> libCharlieProxy.restartGame()
+                        LibGameRequest.EXECUTE_CODE -> libCharlieProxy.execute(codeToExec)
                     }
-                    case 592 -> {
-                        var libGameReq = (LibGameRequest) gameRequest.value;
-                        switch (libGameReq) {
-                            case LOAD_FILE -> doWithCounterDisabled(() -> libAlphaProxy.loadGameState(fileUri));
-                            case SAVE_FILE -> libAlphaProxy.saveGameState(fileUri);
-                            case USE_EXECUTOR -> libAlphaProxy.onUseExecutorString();
-                            case USE_INPUT -> libAlphaProxy.onInputAreaClicked();
-                            case RESTART_GAME -> libAlphaProxy.restartGame();
-                            case EXECUTE_CODE -> libAlphaProxy.execute(codeToExec);
+                }
+
+                592 -> {
+                    val libGameReq = gameRequest.value as LibGameRequest
+                    when (libGameReq) {
+                        LibGameRequest.LOAD_FILE -> doWithCounterDisabled {
+                            libAlphaProxy.loadGameState(fileUri)
                         }
+
+                        LibGameRequest.SAVE_FILE -> libAlphaProxy.saveGameState(fileUri)
+                        LibGameRequest.USE_EXECUTOR -> libAlphaProxy.onUseExecutorString()
+                        LibGameRequest.USE_INPUT -> libAlphaProxy.onInputAreaClicked()
+                        LibGameRequest.RESTART_GAME -> libAlphaProxy.restartGame()
+                        LibGameRequest.EXECUTE_CODE -> libAlphaProxy.execute(codeToExec)
                     }
                 }
             }
+        }
 
-            @Override
-            public void sendAsync(AsyncCallbacks callbacks) throws RemoteException {
-                QuestopiaBundle.this.callbacks = callbacks;
-            }
-        };
+        @Throws(RemoteException::class)
+        override fun sendAsync(callbacks: AsyncCallbacks?) {
+            this@QuestopiaBundle.callbacks = callbacks
+        }
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        libAlphaProxy = null;
-        libBravoProxy = null;
-        libCharlieProxy = null;
-        removeCallback();
+    override fun onDestroy() {
+        super.onDestroy()
+        removeCallback()
     }
 }
