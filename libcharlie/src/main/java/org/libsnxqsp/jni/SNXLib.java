@@ -30,7 +30,7 @@ public abstract class SNXLib {
     public native boolean QSPIsMainDescChanged();
     /* Vars desc */
     public native String QSPGetVarsDesc();
-    public native boolean QSPIsVarsDescChanged();
+    public native boolean isVarsDescChanged();
     public native int getVarValuesCount(String name);
     public native Object QSPGetVarValues(String name, int ind);//!!!STUB
     public native int QSPGetMaxVarsCount();

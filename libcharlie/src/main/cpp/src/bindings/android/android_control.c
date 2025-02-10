@@ -135,7 +135,7 @@ JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetVarsDesc(JNIEnv *e
 }
 
 /* Possibility to change the text of the additional description */
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPIsVarsDescChanged(JNIEnv *env, jobject this)
+JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_isVarsDescChanged(JNIEnv *env, jobject this)
 {
 	return qspIsVarsDescChanged;
 }
