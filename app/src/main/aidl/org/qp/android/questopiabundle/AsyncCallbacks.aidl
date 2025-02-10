@@ -1,5 +1,6 @@
 package org.qp.android.questopiabundle;
 
+import android.net.Uri;
 import org.qp.android.questopiabundle.LibResult;
 import org.qp.android.questopiabundle.LibException;
 import org.qp.android.questopiabundle.LibDialogRetValue;
@@ -16,6 +17,9 @@ interface AsyncCallbacks {
     void closeAllFiles();
     void closeFile(String filePath);
     void playFile(String path, int volume);
+
+    void requestPermOnFile(in Uri fileUri);
+    Uri requestCreateFile(in Uri fileUri, String path);
 
     void onError(in LibException libException);
 }
