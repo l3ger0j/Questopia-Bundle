@@ -162,27 +162,49 @@ QSP_CHAR *qspC2W(char *src)
 	return dst;
 }
 
-jstring qspToJVMString(JNIEnv *env, QSP_CHAR *str)
+jstring ndkToJavaString(JNIEnv *env, QSP_CHAR *str)
 {
+	if (!str) return 0;
 	return (*env)->NewString(env, (jchar *)str, qspStrLen(str));
 }
 
-QSP_CHAR qspFromJavaString(JNIEnv *env, jstring str)
+QSP_CHAR *ndkFromJavaString(JNIEnv *env, jstring str)
 {
-//	jsize length;
-//	jchar *chars;
-//	QSP_CHAR res;
-//	length = (*env)->GetStringLength(env, str);
-//	chars = (*env)->GetStringChars(env, str, 0);
-//	res = qspGetNewText(qspC2W(chars), length);
-//	(*env)->ReleaseStringChars(env, str, chars);
-//	return res;
-	return 0;
+	if (!str) return 0;
+	jsize length;
+	jchar *chars;
+	QSP_CHAR *res;
+	length = (*env)->GetStringLength(env, str);
+	chars = (*env)->GetStringChars(env, str, 0);
+	res = qspGetNewText(chars, length);
+	(*env)->ReleaseStringChars(env, str, chars);
+	return res;
 }
 
-char *qspToSysString(QSP_CHAR *s)
+JNIListItem ndkToJavaListItem(JNIEnv *env, QSP_CHAR *image, QSP_CHAR *text)
 {
-	return qspW2C(s);
+	JNIListItem res;
+	jfieldID fieldId;
+	jobject jniListItem = (*env)->AllocObject(env, ndkListItemClass);
+
+	res.ListItem = jniListItem;
+	res.Image = ndkToJavaString(env, image);
+	res.Name = ndkToJavaString(env, text);
+
+	fieldId = (*env)->GetFieldID(env, ndkListItemClass, "image", "Ljava/lang/String;");
+	(*env)->SetObjectField(env, jniListItem, fieldId, res.Image);
+
+	fieldId = (*env)->GetFieldID(env, ndkListItemClass, "text", "Ljava/lang/String;");
+	(*env)->SetObjectField(env, jniListItem, fieldId, res.Name);
+
+	return res;
+}
+
+void ndkReleaseJavaListItem(JNIEnv *env, JNIListItem *listItem)
+{
+	(*env)->DeleteLocalRef(env, listItem->ListItem);
+	(*env)->DeleteLocalRef(env, listItem->Image);
+	(*env)->DeleteLocalRef(env, listItem->Name);
 }
 
 #endif

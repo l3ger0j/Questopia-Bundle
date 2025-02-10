@@ -57,7 +57,7 @@ void qspCallDebug(QSP_CHAR* str)
 	{
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, str);
+		jstring qspText = ndkToJavaString(javaEnv, str);
 
 		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_DEBUG], qspText);
@@ -101,7 +101,7 @@ void qspCallSetInputStrText(QSP_CHAR* text)
 	{
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, text);
+		jstring qspText = ndkToJavaString(javaEnv, text);
 
 		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SETINPUTSTRTEXT], qspText);
@@ -116,8 +116,8 @@ void qspCallAddMenuItem(QSP_CHAR* name, QSP_CHAR* imgPath)
 	if (qspCallBacks[QSP_CALL_ADDMENUITEM]) {
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring menuItemName = qspToJVMString(javaEnv, name);
-		jstring menuItemImg = qspToJVMString(javaEnv, imgPath);
+		jstring menuItemName = ndkToJavaString(javaEnv, name);
+		jstring menuItemImg = ndkToJavaString(javaEnv, imgPath);
 
 		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_ADDMENUITEM], menuItemName, menuItemImg);
@@ -134,7 +134,7 @@ void qspCallSystem(QSP_CHAR* cmd)
 	{
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, cmd);
+		jstring qspText = ndkToJavaString(javaEnv, cmd);
 
 		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SYSTEM], qspText);
@@ -149,7 +149,7 @@ void qspCallOpenGame(QSP_CHAR* file)
 	if (qspCallBacks[QSP_CALL_OPENGAMESTATUS]) {
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, file);
+		jstring qspText = ndkToJavaString(javaEnv, file);
 
 		qspSaveCallState(&state, QSP_FALSE, QSP_TRUE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_OPENGAMESTATUS], qspText);
@@ -164,7 +164,7 @@ void qspCallSaveGame(QSP_CHAR* file)
 	if (qspCallBacks[QSP_CALL_SAVEGAMESTATUS]) {
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, file);
+		jstring qspText = ndkToJavaString(javaEnv, file);
 
 		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SAVEGAMESTATUS], qspText);
@@ -179,7 +179,7 @@ void qspCallShowMessage(QSP_CHAR* text)
 	if (qspCallBacks[QSP_CALL_SHOWMSGSTR]) {
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, text);
+		jstring qspText = ndkToJavaString(javaEnv, text);
 
 		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SHOWMSGSTR], qspText);
@@ -206,7 +206,7 @@ void qspCallShowPicture(QSP_CHAR* file)
 	if (qspCallBacks[QSP_CALL_SHOWIMAGE]) {
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, file);
+		jstring qspText = ndkToJavaString(javaEnv, file);
 
 		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SHOWIMAGE], qspText);
@@ -233,7 +233,7 @@ void qspCallPlayFile(QSP_CHAR* file, int volume)
 	if (qspCallBacks[QSP_CALL_PLAYFILE]) {
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, file);
+		jstring qspText = ndkToJavaString(javaEnv, file);
 
 		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_PLAYFILE], qspText, volume);
@@ -249,7 +249,7 @@ QSP_BOOL qspCallIsPlayingFile(QSP_CHAR* file)
 		QSPCallState state;
 		QSP_BOOL isPlaying;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, file);
+		jstring qspText = ndkToJavaString(javaEnv, file);
 
 		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
 		isPlaying = (QSP_BOOL)(*javaEnv)->CallBooleanMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_ISPLAYINGFILE], qspText);
@@ -294,7 +294,7 @@ void qspCallCloseFile(QSP_CHAR* file)
 	if (qspCallBacks[QSP_CALL_CLOSEFILE]) {
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, file);
+		jstring qspText = ndkToJavaString(javaEnv, file);
 
 		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_CLOSEFILE], qspText);
@@ -322,13 +322,13 @@ QSP_CHAR* qspCallInputBox(QSP_CHAR* text)
 		QSPCallState state;
 		QSP_CHAR* buffer;
 		JNIEnv *javaEnv = ndkGetJniEnv();
-		jstring qspText = qspToJVMString(javaEnv, text);
+		jstring qspText = ndkToJavaString(javaEnv, text);
 
 		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		jstring jResult = (jstring)((*javaEnv)->CallObjectMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_INPUTBOX], qspText));
 		const char* str = (*javaEnv)->GetStringUTFChars(javaEnv, jResult, NULL);
 		if (str != NULL)
-			buffer = qspC2W(str);
+			buffer = ndkFromJavaString(javaEnv, jResult);
 		else
 			buffer = qspGetNewText(QSP_FMT(""), 0);
 		(*javaEnv)->ReleaseStringUTFChars(javaEnv, jResult, str);
@@ -346,7 +346,7 @@ char* qspCallGetFileContents(QSP_CHAR* fileName, int* filesize)
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		// Convert QSP file name to Java
-		jstring javaFileName = qspToJVMString(javaEnv, fileName);
+		jstring javaFileName = ndkToJavaString(javaEnv, fileName);
 
 		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		// Call GetFileContents
@@ -380,7 +380,7 @@ void qspCallChangeQuestPath(QSP_CHAR* path)
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		// Convert QSP path to Java
-		jstring qspText = qspToJVMString(javaEnv, path);
+		jstring qspText = ndkToJavaString(javaEnv, path);
 
 		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
 		// Call ChangeQuestPath

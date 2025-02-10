@@ -61,7 +61,7 @@
 	typedef jmethodID QSP_CALLBACK;
 
 	#include "../qsp.h"
-	#include "org_qp_android_questopiabundle_libbravo_NDKLib.h"
+	#include "org_libndkqsp_jni_NDKLib.h"
 
 	extern JavaVM *ndkJvm;
 	extern jclass ndkApiClass;
@@ -72,8 +72,16 @@
 	extern jclass ndkErrorInfoClass;
 	extern jclass ndkVarValResp;
 
-	char *qspW2C(QSP_CHAR *);
-	QSP_CHAR *qspC2W(char *);
-	jstring qspToJVMString(JNIEnv *, QSP_CHAR *);
+	typedef struct
+	{
+		jstring Image;
+		jstring Name;
+		jobject ListItem;
+	} JNIListItem;
+
+	jstring ndkToJavaString(JNIEnv *env, QSP_CHAR *str);
+	QSP_CHAR *ndkFromJavaString(JNIEnv *env, jstring str);
+	JNIListItem ndkToJavaListItem(JNIEnv *env, QSP_CHAR *image, QSP_CHAR *name);
+	void ndkReleaseJavaListItem(JNIEnv *env, JNIListItem *listItem);
 
 #endif

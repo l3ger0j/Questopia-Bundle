@@ -1,22 +1,10 @@
-package org.qp.android.questopiabundle.libbravo;
-
-import java.util.Objects;
+package org.libndkqsp.jni;
 
 public abstract class NDKLib {
 
-    public class ListItem {
-        public String pathToImage;
-        public String text;
+    public record ListItem(String image, String text) { }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            var that = (ListItem) o;
-            return Objects.equals(text, that.text)
-                    && Objects.equals(pathToImage, that.pathToImage);
-        }
-    }
+    public record ExecutionState(String loc, int actIndex, int lineNum) { }
 
     public record VarValResp(boolean isSuccess , String stringValue , int intValue) { }
 
@@ -51,13 +39,13 @@ public abstract class NDKLib {
     public native void QSPSetInputStrText(String val);
     /* Actions */
     public native int QSPGetActionsCount();
-    public native Object QSPGetActionData(int ind);//!!!STUB
+    public native ListItem[] QSPGetActionData();
     public native boolean QSPExecuteSelActionCode(boolean isRefresh);
     public native boolean QSPSetSelActionIndex(int ind, boolean isRefresh);
     public native int QSPGetSelActionIndex();
     public native boolean QSPIsActionsChanged();
     /* Objects */
-    public native Object QSPGetObjectData(int ind);//!!!STUB
+    public native ListItem[] QSPGetObjectData();
     public native int QSPGetObjectsCount();
     public native boolean QSPSetSelObjectIndex(int ind, boolean isRefresh);
     public native int QSPGetSelObjectIndex();
@@ -68,11 +56,11 @@ public abstract class NDKLib {
     public native boolean QSPExecCounter(boolean isRefresh);
     public native boolean QSPExecUserInput(boolean isRefresh);
     /* Errors */
-    public native Object QSPGetLastErrorData();
+    public native ErrorData QSPGetLastErrorData();
     public native String QSPGetErrorDesc(int errorNum);
     /* Game */
     public native boolean QSPLoadGameWorld(String fileName);
-    public native boolean QSPLoadGameWorldFromData(byte[] data , int dataSize, String fileName);
+    public native boolean QSPLoadGameWorldFromData(byte[] data, String fileName);
     public native boolean QSPSaveGame(String fileName, boolean isRefresh);
     public native byte[] QSPSaveGameAsData(boolean isRefresh);
     public native boolean QSPOpenSavedGame(String fileName, boolean isRefresh);
