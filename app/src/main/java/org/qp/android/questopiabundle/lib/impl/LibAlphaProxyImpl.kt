@@ -367,7 +367,7 @@ class LibAlphaProxyImpl(
         }
         if (isMainDescChanged) {
             if (isNotEmptyOrBlank(gameState.mainDesc)) {
-                if (gameState.mainDesc != mainDesc) {
+                if (gameState.mainDesc !== mainDesc) {
                     gameState.mainDesc = mainDesc
                     request.isMainDescChanged = true
                 }

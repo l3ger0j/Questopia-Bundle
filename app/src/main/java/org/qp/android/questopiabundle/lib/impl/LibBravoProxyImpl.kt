@@ -379,7 +379,7 @@ class LibBravoProxyImpl(
             request.isIConfigChanged = true
         }
         if (QSPIsMainDescChanged()) {
-            if (gameState.mainDesc != QSPGetMainDesc()) {
+            if (gameState.mainDesc !== QSPGetMainDesc()) {
                 gameState.mainDesc = QSPGetMainDesc()
                 request.isMainDescChanged = true
             }

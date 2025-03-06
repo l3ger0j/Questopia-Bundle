@@ -372,7 +372,7 @@ class LibCharlieProxyImpl(
             request.isIConfigChanged = true
         }
         if (QSPIsMainDescChanged()) {
-            if (gameState.mainDesc != mainDesc) {
+            if (gameState.mainDesc !== mainDesc) {
                 gameState.mainDesc = mainDesc
                 request.isMainDescChanged = true
             }
