@@ -11,11 +11,11 @@ data class LibListItem(
     var pathToImage: String = ""
 ) : Parcelable {
 
-    constructor(item: QSPLib.ListItem) : this(item.name, item.image)
+    constructor(item: QSPLib.ListItem) : this(item.name, item.image ?: "")
 
-    constructor(item: NDKLib.ListItem) : this(item.text, item.image)
+    constructor(item: NDKLib.ListItem) : this(item.text, item.image ?: "")
 
-    constructor(item: SNXLib.ListItem) : this(item.text, item.image)
+    constructor(item: SNXLib.ListItem) : this(item.text, item.image ?: "")
 
     constructor(source: Parcel) : this(
         source.readString() ?: "",
