@@ -23,7 +23,7 @@ data class LibGameState(
 
     constructor(source: Parcel) : this (
         source.readParcelable(LibIConfig::class.java.classLoader) ?: LibIConfig(),
-        source.readByte().toInt() != 0,
+        source.readInt() != 0,
         source.readLong(),
         source.readString() ?: "",
         source.readParcelable(Uri::class.java.classLoader) ?: Uri.EMPTY,
@@ -38,7 +38,7 @@ data class LibGameState(
 
     override fun writeToParcel(dest: Parcel, flags: Int) {
         dest.writeParcelable(interfaceConfig, flags)
-        dest.writeByte((if (gameRunning) 1 else 0).toByte())
+        dest.writeInt(if (gameRunning) 1 else 0)
         dest.writeLong(gameId)
         dest.writeString(gameTitle)
         dest.writeParcelable(gameDirUri, flags)
