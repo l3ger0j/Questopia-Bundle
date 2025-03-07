@@ -8,12 +8,10 @@ import java.util.regex.Pattern
 object HtmlUtil {
     private val HTML_PATTERN: Pattern = Pattern.compile("<(\"[^\"]*\"|'[^']*'|[^'\">])*>")
 
-    @JvmStatic
     fun isContainsHtmlTags(text: String): Boolean {
         return HTML_PATTERN.matcher(text).find()
     }
 
-    @JvmStatic
     fun getSrcDir(html: String): String {
         val document = Jsoup.parse(html)
         val imageElement = document.select("img").first() ?: return ""
@@ -23,7 +21,6 @@ object HtmlUtil {
     /**
      * Remove HTML tags from the `html` string and return the resulting string.
      */
-    @JvmStatic
     fun removeHtmlTags(html: String): String {
         if (isNullOrEmpty(html)) return ""
 
