@@ -3,6 +3,10 @@ package org.qp.android.questopiabundle.utils
 import org.jetbrains.annotations.Contract
 
 object StringUtil {
+    fun isEmptyOrBlank(str: String?): Boolean {
+        return str.isNullOrEmpty() || str.isBlank()
+    }
+
     fun isNotEmptyOrBlank(str: String?): Boolean {
         return !str.isNullOrEmpty() && str.isNotBlank()
     }
