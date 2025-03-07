@@ -8,20 +8,20 @@ import org.qp.android.questopiabundle.dto.LibMenuItem
 import org.qp.android.questopiabundle.lib.LibIConfig
 
 data class LibGameState(
-    var interfaceConfig: LibIConfig = LibIConfig(),
-    var gameRunning: Boolean = false,
-    var gameId: Long = 0L,
-    var gameTitle: String = "",
-    var gameDirUri: Uri = Uri.EMPTY,
-    var gameFileUri: Uri = Uri.EMPTY,
-    var mainDesc: String = "",
-    var varsDesc: String = "",
-    var actionsList: MutableList<LibListItem> = mutableListOf(),
-    var objectsList: MutableList<LibListItem> = mutableListOf(),
-    var menuItemsList: MutableList<LibMenuItem> = mutableListOf()
+    val interfaceConfig: LibIConfig = LibIConfig(),
+    val gameRunning: Boolean = false,
+    val gameId: Long = 0L,
+    val gameTitle: String = "",
+    val gameDirUri: Uri = Uri.EMPTY,
+    val gameFileUri: Uri = Uri.EMPTY,
+    val mainDesc: String = "",
+    val varsDesc: String = "",
+    val actionsList: List<LibListItem> = listOf(),
+    val objectsList: List<LibListItem> = listOf(),
+    val menuItemsList: List<LibMenuItem> = listOf()
 ) : Parcelable {
 
-    constructor(source: Parcel) : this (
+    constructor(source: Parcel) : this(
         source.readParcelable(LibIConfig::class.java.classLoader) ?: LibIConfig(),
         source.readInt() != 0,
         source.readLong(),
@@ -51,20 +51,6 @@ data class LibGameState(
     }
 
     override fun describeContents(): Int = 0
-
-    fun reset() {
-        interfaceConfig.reset()
-        gameRunning = false
-        gameId = 0L
-        gameTitle = ""
-        gameDirUri = Uri.EMPTY
-        gameFileUri = Uri.EMPTY
-        mainDesc = ""
-        varsDesc = ""
-        actionsList.clear()
-        objectsList.clear()
-        menuItemsList.clear()
-    }
 
     companion object CREATOR : Parcelable.Creator<LibGameState> {
         override fun createFromParcel(source: Parcel): LibGameState {

@@ -4,11 +4,11 @@ import android.os.Parcel
 import android.os.Parcelable
 
 data class LibIConfig(
-    var useHtml: Boolean = false,
-    var fontSize: Long = 0L,
-    var backColor: Long = 0L,
-    var fontColor: Long = 0L,
-    var linkColor: Long = 0L
+    val useHtml: Boolean = false,
+    val fontSize: Long = 0L,
+    val backColor: Long = 0L,
+    val fontColor: Long = 0L,
+    val linkColor: Long = 0L
 ) : Parcelable {
 
     constructor(source: Parcel) : this(
@@ -18,14 +18,6 @@ data class LibIConfig(
         source.readLong(),
         source.readLong()
     )
-
-    fun reset() {
-        useHtml = false
-        fontSize = 0L
-        backColor = 0L
-        fontColor = 0L
-        linkColor = 0L
-    }
 
     override fun describeContents(): Int = 0
 

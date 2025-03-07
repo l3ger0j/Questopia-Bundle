@@ -4,11 +4,11 @@ import android.os.Parcel
 import android.os.Parcelable
 
 data class LibRefIRequest(
-    var isIConfigChanged: Boolean = false,
-    var isMainDescChanged: Boolean = false,
-    var isActionsChanged: Boolean = false,
-    var isObjectsChanged: Boolean = false,
-    var isVarsDescChanged: Boolean = false
+    val isIConfigChanged: Boolean = false,
+    val isMainDescChanged: Boolean = false,
+    val isActionsChanged: Boolean = false,
+    val isObjectsChanged: Boolean = false,
+    val isVarsDescChanged: Boolean = false
 ) : Parcelable {
 
     constructor(source: Parcel) : this(
