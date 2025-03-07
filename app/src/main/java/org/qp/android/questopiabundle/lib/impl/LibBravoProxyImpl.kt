@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
+import com.anggrayudi.storage.file.child
 import org.libndkqsp.jni.NDKLib
 import org.qp.android.questopiabundle.GameInterface
 import org.qp.android.questopiabundle.dto.LibListItem
@@ -19,25 +20,23 @@ import org.qp.android.questopiabundle.lib.LibTypeDialog
 import org.qp.android.questopiabundle.lib.LibTypeWindow
 import org.qp.android.questopiabundle.utils.FileUtil.documentWrap
 import org.qp.android.questopiabundle.utils.FileUtil.fromFullPath
-import org.qp.android.questopiabundle.utils.FileUtil.fromRelPath
 import org.qp.android.questopiabundle.utils.FileUtil.getFileContents
+import org.qp.android.questopiabundle.utils.FileUtil.isWritableDir
 import org.qp.android.questopiabundle.utils.FileUtil.isWritableFile
 import org.qp.android.questopiabundle.utils.FileUtil.writeFileContents
 import org.qp.android.questopiabundle.utils.HtmlUtil.getSrcDir
 import org.qp.android.questopiabundle.utils.HtmlUtil.isContainsHtmlTags
-import org.qp.android.questopiabundle.utils.HtmlUtil.removeHtmlTags
 import org.qp.android.questopiabundle.utils.PathUtil.getFilename
 import org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath
 import org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty
 import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
 import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
-import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.Volatile
 
 class LibBravoProxyImpl(
     private val context: Context,
-    override val gameState: LibGameState = LibGameState()
+    override var gameState: LibGameState = LibGameState()
 ) : NDKLib(), LibIProxy {
 
     private val TAG = javaClass.simpleName
@@ -91,16 +90,14 @@ class LibBravoProxyImpl(
         val errorData = QSPGetLastErrorData() as ErrorData
         val locName = getStringOrEmpty(errorData.locName)
         val desc = getStringOrEmpty(QSPGetErrorDesc(errorData.errorNum))
-        val message = String.format(
-            Locale.getDefault(),
-            "Location: %s\nAction: %d\nLine: %d\nError number: %d\nDescription: %s",
-            locName,
-            errorData.index,
-            errorData.line,
-            errorData.errorNum,
-            desc
-        )
-        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, message)
+
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, """
+            Location: $locName
+            Action: ${errorData.index}
+            Line: ${errorData.line}
+            Error number: ${errorData.errorNum}
+            Description: $desc
+        """.trimIndent())
     }
 
     /**
@@ -116,88 +113,108 @@ class LibBravoProxyImpl(
         if (htmlResult.isSuccess) {
             val useHtml = htmlResult.intValue != 0
             if (config.useHtml != useHtml) {
-                config.useHtml = useHtml
+                gameState = gameState.copy(
+                    interfaceConfig = config.copy(
+                        useHtml = useHtml
+                    )
+                )
                 changed = true
             }
         }
+
         val fSizeResult = QSPGetVarValues("FSIZE", 0) as VarValResp
         if (fSizeResult.isSuccess && config.fontSize != fSizeResult.intValue.toLong()) {
-            config.fontSize = fSizeResult.intValue.toLong()
+            gameState = gameState.copy(
+                interfaceConfig = config.copy(
+                    fontSize = fSizeResult.intValue.toLong()
+                )
+            )
             changed = true
         }
+
         val bColorResult = QSPGetVarValues("BCOLOR", 0) as VarValResp
         if (bColorResult.isSuccess && config.backColor != bColorResult.intValue.toLong()) {
-            config.backColor = bColorResult.intValue.toLong()
+            gameState = gameState.copy(
+                interfaceConfig = config.copy(
+                    backColor = bColorResult.intValue.toLong()
+                )
+            )
             changed = true
         }
+
         val fColorResult = QSPGetVarValues("FCOLOR", 0) as VarValResp
         if (fColorResult.isSuccess && config.fontColor != fColorResult.intValue.toLong()) {
-            config.fontColor = fColorResult.intValue.toLong()
+            gameState = gameState.copy(
+                interfaceConfig = config.copy(
+                    fontColor = fColorResult.intValue.toLong()
+                )
+            )
             changed = true
         }
+
         val lColorResult = QSPGetVarValues("LCOLOR", 0) as VarValResp
         if (lColorResult.isSuccess && config.linkColor != lColorResult.intValue.toLong()) {
-            config.linkColor = lColorResult.intValue.toLong()
+            gameState = gameState.copy(
+                interfaceConfig = config.copy(
+                    linkColor = lColorResult.intValue.toLong()
+                )
+            )
             changed = true
         }
 
         return changed
     }
 
-    private val actionsList: ArrayList<LibListItem>
+    private val actionsList: List<LibListItem>
         get() {
-            val actions = ArrayList<LibListItem>()
-            val currGameDir = currGameDir
+            if (!isWritableDir(context, currGameDir)) return emptyList()
+            val actions = mutableListOf<LibListItem>()
+            val gameDir = currGameDir
 
             for (element in QSPGetActionData()) {
-                val newElement = LibListItem(element)
-                if (isNotEmptyOrBlank(newElement.pathToImage) && currGameDir != null) {
-                    val tempPath =
-                        normalizeContentPath(getFilename(newElement.pathToImage))
-                    val fileFromPath =
-                        fromRelPath(context, tempPath, currGameDir, false)
-                    if (fileFromPath != null) {
-                        newElement.pathToImage = fileFromPath.uri.toString()
-                    } else {
-                        newElement.pathToImage = ""
+                var tempImagePath = element.image
+                val tempText = element.text
+
+                if (isNotEmptyOrBlank(tempImagePath)) {
+                    val tempPath = normalizeContentPath(getFilename(tempImagePath))
+                    val fileFromPath = gameDir?.child(context, tempPath)
+                    if (isWritableFile(context, fileFromPath)) {
+                        tempImagePath = fileFromPath?.uri.toString()
                     }
                 }
-                newElement.text = if (gameState.interfaceConfig.useHtml) {
-                    removeHtmlTags(newElement.text)
-                } else {
-                    newElement.text
-                }
-                actions.add(newElement)
+
+                actions.add(LibListItem(tempText, tempImagePath))
             }
 
             return actions
         }
 
-    private val objectsList: ArrayList<LibListItem>
+    private val objectsList: List<LibListItem>
         get() {
-            val objects = ArrayList<LibListItem>()
-            val currGameDir = currGameDir
+            if (!isWritableDir(context, currGameDir)) return emptyList()
+            val objects = mutableListOf<LibListItem>()
+            val gameDir = currGameDir
 
             for (element in QSPGetObjectData()) {
-                val newElement = LibListItem(element)
-                if (newElement.text.contains("<img") && currGameDir != null) {
-                    if (isContainsHtmlTags(newElement.text)) {
-                        val tempPath = getSrcDir(newElement.text)
-                        val fileFromPath =
-                            fromRelPath(context, tempPath, currGameDir, false)
-                        newElement.pathToImage = fileFromPath.toString()
+                var tempImagePath = element.image
+                val tempText = element.text
+
+                if (tempText.contains("<img")) {
+                    if (!isContainsHtmlTags(tempText)) {
+                        val fileFromPath = gameDir?.child(context, tempText)
+                        if (isWritableFile(context, fileFromPath)) {
+                            tempImagePath = fileFromPath?.uri.toString()
+                        }
                     } else {
-                        val fileFromPath =
-                            fromRelPath(context, newElement.text, currGameDir, false)
-                        newElement.pathToImage = fileFromPath.toString()
+                        val tempPath = getSrcDir(tempText)
+                        val fileFromPath = gameDir?.child(context, tempPath)
+                        if (isWritableFile(context, fileFromPath)) {
+                            tempImagePath = fileFromPath?.uri.toString()
+                        }
                     }
-                } else {
-                    newElement.text = if (gameState.interfaceConfig.useHtml)
-                        removeHtmlTags(newElement.text)
-                    else
-                        newElement.text
                 }
-                objects.add(newElement)
+
+                objects.add(LibListItem(tempText, tempImagePath))
             }
 
             return objects
@@ -264,12 +281,13 @@ class LibBravoProxyImpl(
     private fun doRunGame(id: Long, title: String, dir: Uri, file: Uri) {
         gameInterface.doWithCounterDisabled {
             gameInterface.closeAllFiles()
-            gameState.reset()
-            gameState.gameRunning = true
-            gameState.gameId = id
-            gameState.gameTitle = title
-            gameState.gameDirUri = dir
-            gameState.gameFileUri = file
+            gameState = gameState.copy(
+                gameRunning = true,
+                gameId = id,
+                gameTitle = title,
+                gameDirUri = dir,
+                gameFileUri = file
+            )
             gameInterface.doChangeCurrGameDir(dir)
             if (!loadGameWorld()) return@doWithCounterDisabled
             gameStartTime = SystemClock.elapsedRealtime()
@@ -372,39 +390,23 @@ class LibBravoProxyImpl(
     // endregion LibQpProxy
     // region LibQpCallbacks
     override fun RefreshInt() {
+        gameState = gameState.copy(
+            mainDesc = if (QSPIsMainDescChanged() && gameState.mainDesc != QSPGetMainDesc()) QSPGetMainDesc() else gameState.mainDesc,
+            varsDesc = if (QSPIsVarsDescChanged() && gameState.varsDesc != QSPGetVarsDesc()) QSPGetVarsDesc() else gameState.varsDesc,
+            actionsList = if (QSPIsActionsChanged() && gameState.actionsList !== actionsList) actionsList else gameState.actionsList,
+            objectsList = if (QSPIsObjectsChanged() && gameState.objectsList !== objectsList) objectsList else gameState.objectsList
+        )
+
         val request = LibRefIRequest()
-        val configChanged = loadInterfaceConfiguration()
-
-        if (configChanged) {
-            request.isIConfigChanged = true
-        }
-        if (QSPIsMainDescChanged()) {
-            if (gameState.mainDesc !== QSPGetMainDesc()) {
-                gameState.mainDesc = QSPGetMainDesc()
-                request.isMainDescChanged = true
-            }
-        }
-        if (QSPIsActionsChanged()) {
-            if (gameState.actionsList !== actionsList) {
-                gameState.actionsList = actionsList
-                request.isActionsChanged = true
-            }
-        }
-        if (QSPIsObjectsChanged()) {
-            if (gameState.objectsList !== objectsList) {
-                gameState.objectsList = objectsList
-                request.isObjectsChanged = true
-            }
-        }
-        if (QSPIsVarsDescChanged()) {
-            if (gameState.varsDesc != QSPGetVarsDesc()) {
-                gameState.varsDesc = QSPGetVarsDesc() ?: ""
-                request.isVarsDescChanged = true
-            }
-        }
-
-        val inter = gameInterface
-        inter.doRefresh(request)
+        gameInterface.doRefresh(
+            request.copy(
+                isIConfigChanged = loadInterfaceConfiguration(),
+                isMainDescChanged = QSPIsMainDescChanged(),
+                isVarsDescChanged = QSPIsVarsDescChanged(),
+                isActionsChanged = QSPIsActionsChanged(),
+                isObjectsChanged = QSPIsObjectsChanged()
+            )
+        )
     }
 
     override fun ShowPicture(path: String) {
@@ -492,7 +494,7 @@ class LibBravoProxyImpl(
         val item = LibMenuItem()
         item.name = name
         item.pathToImage = imgPath
-        gameState.menuItemsList.add(item)
+        gameState = gameState.copy(menuItemsList = listOf(item))
     }
 
     override fun ShowMenu() {
@@ -504,7 +506,7 @@ class LibBravoProxyImpl(
     }
 
     override fun DeleteMenu() {
-        gameState.menuItemsList.clear()
+        gameState = gameState.copy(menuItemsList = emptyList())
     }
 
     override fun Wait(msecs: Int) {
@@ -536,7 +538,7 @@ class LibBravoProxyImpl(
         val currGameDirUri = currGameDir?.uri
         val newGameDirUri = newGameDir.uri
         if (currGameDirUri != newGameDirUri) {
-            gameState.gameDirUri = newGameDirUri
+            gameState = gameState.copy(gameDirUri = newGameDirUri)
             gameInterface.doChangeCurrGameDir(newGameDirUri)
         }
     } // endregion LibQpCallbacks

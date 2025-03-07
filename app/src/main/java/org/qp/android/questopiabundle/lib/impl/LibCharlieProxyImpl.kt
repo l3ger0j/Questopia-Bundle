@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
+import com.anggrayudi.storage.file.child
 import org.libsnxqsp.jni.SNXLib
 import org.qp.android.questopiabundle.GameInterface
 import org.qp.android.questopiabundle.dto.LibListItem
@@ -19,25 +20,24 @@ import org.qp.android.questopiabundle.lib.LibTypeDialog
 import org.qp.android.questopiabundle.lib.LibTypeWindow
 import org.qp.android.questopiabundle.utils.FileUtil.documentWrap
 import org.qp.android.questopiabundle.utils.FileUtil.fromFullPath
-import org.qp.android.questopiabundle.utils.FileUtil.fromRelPath
 import org.qp.android.questopiabundle.utils.FileUtil.getFileContents
+import org.qp.android.questopiabundle.utils.FileUtil.isWritableDir
 import org.qp.android.questopiabundle.utils.FileUtil.isWritableFile
 import org.qp.android.questopiabundle.utils.FileUtil.writeFileContents
 import org.qp.android.questopiabundle.utils.HtmlUtil.getSrcDir
 import org.qp.android.questopiabundle.utils.HtmlUtil.isContainsHtmlTags
-import org.qp.android.questopiabundle.utils.HtmlUtil.removeHtmlTags
 import org.qp.android.questopiabundle.utils.PathUtil.getFilename
 import org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath
 import org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty
+import org.qp.android.questopiabundle.utils.StringUtil.isEmptyOrBlank
 import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
 import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
-import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.Volatile
 
 class LibCharlieProxyImpl(
     private val context: Context,
-    override val gameState: LibGameState = LibGameState()
+    override var gameState: LibGameState = LibGameState()
 ) : SNXLib(), LibIProxy {
 
     private val TAG = javaClass.simpleName
@@ -86,16 +86,14 @@ class LibCharlieProxyImpl(
         val errorData = lastErrorData
         val locName = getStringOrEmpty(errorData.locName)
         val desc = getStringOrEmpty(getErrorDesc(errorData.errorNum))
-        val message = String.format(
-            Locale.getDefault(),
-            "Location: %s\nAction: %d\nLine: %d\nError number: %d\nDescription: %s",
-            locName,
-            errorData.index,
-            errorData.line,
-            errorData.errorNum,
-            desc
-        )
-        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, message)
+
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, """
+            Location: $locName
+            Action: ${errorData.index}
+            Line: ${errorData.line}
+            Error number: ${errorData.errorNum}
+            Description: $desc
+        """.trimIndent())
     }
 
     /**
@@ -111,88 +109,108 @@ class LibCharlieProxyImpl(
         if (htmlResult.isSuccess) {
             val useHtml = htmlResult.intValue != 0
             if (config.useHtml != useHtml) {
-                config.useHtml = useHtml
+                gameState = gameState.copy(
+                    interfaceConfig = config.copy(
+                        useHtml = useHtml
+                    )
+                )
                 changed = true
             }
         }
+
         val fSizeResult = QSPGetVarValues("FSIZE", 0) as VarValResp
         if (fSizeResult.isSuccess && config.fontSize != fSizeResult.intValue.toLong()) {
-            config.fontSize = fSizeResult.intValue.toLong()
+            gameState = gameState.copy(
+                interfaceConfig = config.copy(
+                    fontSize = fSizeResult.intValue.toLong()
+                )
+            )
             changed = true
         }
+
         val bColorResult = QSPGetVarValues("BCOLOR", 0) as VarValResp
         if (bColorResult.isSuccess && config.backColor != bColorResult.intValue.toLong()) {
-            config.backColor = bColorResult.intValue.toLong()
+            gameState = gameState.copy(
+                interfaceConfig = config.copy(
+                    backColor = bColorResult.intValue.toLong()
+                )
+            )
             changed = true
         }
+
         val fColorResult = QSPGetVarValues("FCOLOR", 0) as VarValResp
         if (fColorResult.isSuccess && config.fontColor != fColorResult.intValue.toLong()) {
-            config.fontColor = fColorResult.intValue.toLong()
+            gameState = gameState.copy(
+                interfaceConfig = config.copy(
+                    fontColor = fColorResult.intValue.toLong()
+                )
+            )
             changed = true
         }
+
         val lColorResult = QSPGetVarValues("LCOLOR", 0) as VarValResp
         if (lColorResult.isSuccess && config.linkColor != lColorResult.intValue.toLong()) {
-            config.linkColor = lColorResult.intValue.toLong()
+            gameState = gameState.copy(
+                interfaceConfig = config.copy(
+                    linkColor = lColorResult.intValue.toLong()
+                )
+            )
             changed = true
         }
 
         return changed
     }
 
-    private val actionsList: ArrayList<LibListItem>
+    private val actionsList: List<LibListItem>
         get() {
-            val actions = ArrayList<LibListItem>()
-            val currGameDir = currGameDir
+            if (!isWritableDir(context, currGameDir)) return emptyList()
+            val actions = mutableListOf<LibListItem>()
+            val gameDir = currGameDir
 
             for (element in getActions()) {
-                val newElement = LibListItem(element)
-                if (isNotEmptyOrBlank(newElement.pathToImage) && currGameDir != null) {
-                    val tempPath =
-                        normalizeContentPath(getFilename(newElement.pathToImage))
-                    val fileFromPath =
-                        fromRelPath(context, tempPath, currGameDir, false)
-                    if (fileFromPath != null) {
-                        newElement.pathToImage = fileFromPath.uri.toString()
-                    } else {
-                        newElement.pathToImage = ""
+                var tempImagePath = element.image
+                val tempText = element.text
+
+                if (isNotEmptyOrBlank(tempImagePath)) {
+                    val tempPath = normalizeContentPath(getFilename(tempImagePath))
+                    val fileFromPath = gameDir?.child(context, tempPath)
+                    if (isWritableFile(context, fileFromPath)) {
+                        tempImagePath = fileFromPath?.uri.toString()
                     }
                 }
-                newElement.text = if (gameState.interfaceConfig.useHtml) {
-                    removeHtmlTags(newElement.text)
-                } else {
-                    newElement.text
-                }
-                actions.add(newElement)
+
+                actions.add(LibListItem(tempText, tempImagePath))
             }
 
             return actions
         }
 
-    private val objectsList: ArrayList<LibListItem>
+    private val objectsList: List<LibListItem>
         get() {
-            val objects = ArrayList<LibListItem>()
-            val currGameDir = currGameDir
+            if (!isWritableDir(context, currGameDir)) return emptyList()
+            val objects = mutableListOf<LibListItem>()
+            val gameDir = currGameDir
 
             for (element in getObjects()) {
-                val newElement = LibListItem(element)
-                if (newElement.text.contains("<img") && currGameDir != null) {
-                    if (isContainsHtmlTags(newElement.text)) {
-                        val tempPath = getSrcDir(newElement.text)
-                        val fileFromPath =
-                            fromRelPath(context, tempPath, currGameDir, false)
-                        newElement.pathToImage = fileFromPath.toString()
+                var tempImagePath = element.image
+                val tempText = element.text
+
+                if (tempText.contains("<img")) {
+                    if (!isContainsHtmlTags(tempText)) {
+                        val fileFromPath = gameDir?.child(context, tempText)
+                        if (isWritableFile(context, fileFromPath)) {
+                            tempImagePath = fileFromPath?.uri.toString()
+                        }
                     } else {
-                        val fileFromPath =
-                            fromRelPath(context, newElement.text, currGameDir, false)
-                        newElement.pathToImage = fileFromPath.toString()
+                        val tempPath = getSrcDir(tempText)
+                        val fileFromPath = gameDir?.child(context, tempPath)
+                        if (isWritableFile(context, fileFromPath)) {
+                            tempImagePath = fileFromPath?.uri.toString()
+                        }
                     }
-                } else {
-                    newElement.text = if (gameState.interfaceConfig.useHtml)
-                        removeHtmlTags(newElement.text)
-                    else
-                        newElement.text
                 }
-                objects.add(newElement)
+
+                objects.add(LibListItem(tempText, tempImagePath))
             }
 
             return objects
@@ -259,12 +277,13 @@ class LibCharlieProxyImpl(
     private fun doRunGame(id: Long, title: String, dir: Uri, file: Uri) {
         gameInterface.doWithCounterDisabled {
             gameInterface.closeAllFiles()
-            gameState.reset()
-            gameState.gameRunning = true
-            gameState.gameId = id
-            gameState.gameTitle = title
-            gameState.gameDirUri = dir
-            gameState.gameFileUri = file
+            gameState = gameState.copy(
+                gameRunning = true,
+                gameId = id,
+                gameTitle = title,
+                gameDirUri = dir,
+                gameFileUri = file
+            )
             gameInterface.doChangeCurrGameDir(dir)
             if (!loadGameWorld()) return@doWithCounterDisabled
             gameStartTime = SystemClock.elapsedRealtime()
@@ -364,68 +383,49 @@ class LibCharlieProxyImpl(
         this.gameInterface = inter
     }
 
-    override fun RefreshInt() {
+    override fun onRefreshInt() {
+        gameState = gameState.copy(
+            mainDesc = if (isMainDescChanged && gameState.mainDesc != mainDesc) mainDesc else gameState.mainDesc,
+            varsDesc = if (isVarsDescChanged && gameState.varsDesc != varsDesc) varsDesc else gameState.varsDesc,
+            actionsList = if (isActionsChanged && gameState.actionsList !== actionsList) actionsList else gameState.actionsList,
+            objectsList = if (isObjectsChanged && gameState.objectsList !== objectsList) objectsList else gameState.objectsList
+        )
+
         val request = LibRefIRequest()
-        val configChanged = loadInterfaceConfiguration()
-
-        if (configChanged) {
-            request.isIConfigChanged = true
-        }
-        if (QSPIsMainDescChanged()) {
-            if (gameState.mainDesc !== mainDesc) {
-                gameState.mainDesc = mainDesc
-                request.isMainDescChanged = true
-            }
-        }
-        if (isActionsChanged) {
-            if (gameState.actionsList !== actionsList) {
-                gameState.actionsList = actionsList
-                request.isActionsChanged = true
-            }
-        }
-        if (isObjectsChanged) {
-            if (gameState.objectsList !== objectsList) {
-                gameState.objectsList = objectsList
-                request.isObjectsChanged = true
-            }
-        }
-        if (isVarsDescChanged) {
-            if (gameState.varsDesc !== QSPGetVarsDesc()) {
-                gameState.varsDesc = QSPGetVarsDesc() ?: ""
-                request.isVarsDescChanged = true
-            }
-        }
-
-        val inter = gameInterface
-        inter.doRefresh(request)
+        gameInterface.doRefresh(
+            request.copy(
+                isIConfigChanged = loadInterfaceConfiguration(),
+                isMainDescChanged = isMainDescChanged,
+                isVarsDescChanged = isVarsDescChanged,
+                isActionsChanged = isActionsChanged,
+                isObjectsChanged = isObjectsChanged
+            )
+        )
     }
 
-    override fun ShowPicture(path: String) {
-        val inter = gameInterface
-        if (!isNotEmptyOrBlank(path)) return
-        inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
+    override fun onShowImage(path: String?) {
+        if (isEmptyOrBlank(path)) return
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
     }
 
-    override fun SetTimer(msecs: Int) {
-        val inter = gameInterface
-        inter.setCountInter(msecs)
+    override fun onSetTimer(msecs: Int) {
+        gameInterface.setCountInter(msecs)
     }
 
-    override fun ShowMessage(message: String) {
-        val inter = gameInterface
-        inter.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, message)
+    override fun onShowMessage(message: String) {
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, message)
     }
 
-    override fun PlayFile(path: String, volume: Int) {
-        if (!isNotEmptyOrBlank(path)) return
+    override fun onPlayFile(path: String?, volume: Int) {
+        if (isEmptyOrBlank(path)) return
         gameInterface.playFile(path, volume)
     }
 
-    override fun IsPlayingFile(path: String): Boolean {
-        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path)
+    override fun onIsPlayingFile(path: String?): Boolean {
+        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path!!)
     }
 
-    override fun CloseFile(path: String) {
+    override fun onCloseFile(path: String?) {
         if (isNotEmptyOrBlank(path)) {
             gameInterface.closeFile(path)
         } else {
@@ -433,12 +433,12 @@ class LibCharlieProxyImpl(
         }
     }
 
-    override fun OpenGame(filename: String?) {
-        if (filename == null) {
+    override fun onOpenGame(filename: String?) {
+        if (isEmptyOrBlank(filename)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
             try {
-                val saveFile = fromFullPath(context, filename) ?: return
+                val saveFile = fromFullPath(context, filename!!) ?: return
                 gameInterface.requestPermFile(saveFile.uri)
                 if (isWritableFile(context, saveFile)) {
                     gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
@@ -453,12 +453,12 @@ class LibCharlieProxyImpl(
         }
     }
 
-    override fun SaveGame(filename: String?) {
-        if (filename == null) {
+    override fun onSaveGame(filename: String?) {
+        if (isEmptyOrBlank(filename)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null)
         } else {
             val currGameDir = currGameDir ?: return
-            val saveFileUri = gameInterface.requestCreateFile(currGameDir.uri, filename)
+            val saveFileUri = gameInterface.requestCreateFile(currGameDir.uri, filename!!)
             if (saveFileUri != Uri.EMPTY) {
                 saveGameState(saveFileUri)
             } else {
@@ -468,12 +468,12 @@ class LibCharlieProxyImpl(
         }
     }
 
-    override fun InputBox(prompt: String): String {
+    override fun onInputBox(prompt: String?): String {
         val doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, prompt) ?: return ""
         return doShow.outTextValue
     }
 
-    override fun GetMSCount(): Int {
+    override fun onGetMsCount(): Int {
         val now = SystemClock.elapsedRealtime()
         if (lastMsCountCallTime == 0L) {
             lastMsCountCallTime = gameStartTime
@@ -483,28 +483,28 @@ class LibCharlieProxyImpl(
         return dt
     }
 
-    override fun addMenuItem(name: String, imgPath: String) {
+    override fun onAddMenuItem(name: String?, imgPath: String?) {
         val item = LibMenuItem()
-        item.name = name
-        item.pathToImage = imgPath
-        gameState.menuItemsList.add(item)
+        item.name = name ?: ""
+        item.pathToImage = imgPath ?: ""
+        gameState = gameState.copy(menuItemsList = listOf(item))
     }
 
-    override fun showMenu(): Int {
+    override fun onShowMenu(): Int {
         val doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_MENU, null)
-            ?: return super.showMenu()
+            ?: return super.onShowMenu()
         val result = doShow.outNumValue
         if (result != -1) {
             return result
         }
-        return super.showMenu()
+        return super.onShowMenu()
     }
 
-    override fun deleteMenu() {
-        gameState.menuItemsList.clear()
+    override fun onDeleteMenu() {
+        gameState = gameState.copy(menuItemsList = emptyList())
     }
 
-    override fun Wait(msecs: Int) {
+    override fun onSleep(msecs: Int) {
         try {
             Thread.sleep(msecs.toLong())
         } catch (ex: InterruptedException) {
@@ -512,7 +512,7 @@ class LibCharlieProxyImpl(
         }
     }
 
-    override fun ShowWindow(type: Int, isShow: Boolean) {
+    override fun onShowWindow(type: Int, isShow: Boolean) {
         val windowType = LibTypeWindow.entries[type]
         gameInterface.changeVisWindow(windowType, isShow)
     }

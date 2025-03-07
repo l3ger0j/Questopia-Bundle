@@ -121,7 +121,7 @@ JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_getMainDesc(JNIEnv *env,
 }
 
 /* The ability to change the text of the main description */
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPIsMainDescChanged(JNIEnv *env, jobject this)
+JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_isMainDescChanged(JNIEnv *env, jobject this)
 {
 	return qspIsMainDescChanged;
 }
@@ -129,7 +129,7 @@ JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPIsMainDescChanged(JN
 /* Additional description of the location */
 
 /* Text of the additional location description window */
-JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetVarsDesc(JNIEnv *env, jobject this)
+JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_getVarsDesc(JNIEnv *env, jobject this)
 {
 	return snxToJavaString(env, qspCurVars);
 }
@@ -753,25 +753,25 @@ JNIEXPORT void JNICALL Java_org_libsnxqsp_jni_SNXLib_init(JNIEnv *env, jobject t
 	snxVarValResp = (jclass)(*env)->NewGlobalRef(env, clazz);
 
 	/* Get references to callbacks */
-	qspSetCallBack(QSP_CALL_DEBUG, (*env)->GetMethodID(env, snxApiClass, "CallDebug", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_ISPLAYINGFILE, (*env)->GetMethodID(env, snxApiClass, "IsPlayingFile", "(Ljava/lang/String;)Z"));
-	qspSetCallBack(QSP_CALL_PLAYFILE, (*env)->GetMethodID(env, snxApiClass, "PlayFile", "(Ljava/lang/String;I)V"));
-	qspSetCallBack(QSP_CALL_CLOSEFILE, (*env)->GetMethodID(env, snxApiClass, "CloseFile", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_SHOWIMAGE, (*env)->GetMethodID(env, snxApiClass, "ShowPicture", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_SHOWWINDOW, (*env)->GetMethodID(env, snxApiClass, "ShowWindow", "(IZ)V"));
-	qspSetCallBack(QSP_CALL_SHOWMENU, (*env)->GetMethodID(env, snxApiClass, "showMenu", "()I"));
-	qspSetCallBack(QSP_CALL_SHOWMSGSTR, (*env)->GetMethodID(env, snxApiClass, "ShowMessage", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_REFRESHINT, (*env)->GetMethodID(env, snxApiClass, "RefreshInt", "()V"));
-	qspSetCallBack(QSP_CALL_SETTIMER, (*env)->GetMethodID(env, snxApiClass, "SetTimer", "(I)V"));
+	qspSetCallBack(QSP_CALL_DEBUG, (*env)->GetMethodID(env, snxApiClass, "onDebug", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_ISPLAYINGFILE, (*env)->GetMethodID(env, snxApiClass, "onIsPlayingFile", "(Ljava/lang/String;)Z"));
+	qspSetCallBack(QSP_CALL_PLAYFILE, (*env)->GetMethodID(env, snxApiClass, "onPlayFile", "(Ljava/lang/String;I)V"));
+	qspSetCallBack(QSP_CALL_CLOSEFILE, (*env)->GetMethodID(env, snxApiClass, "onCloseFile", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_SHOWIMAGE, (*env)->GetMethodID(env, snxApiClass, "onShowImage", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_SHOWWINDOW, (*env)->GetMethodID(env, snxApiClass, "onShowWindow", "(IZ)V"));
+	qspSetCallBack(QSP_CALL_SHOWMENU, (*env)->GetMethodID(env, snxApiClass, "onShowMenu", "()I"));
+	qspSetCallBack(QSP_CALL_SHOWMSGSTR, (*env)->GetMethodID(env, snxApiClass, "onShowMessage", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_REFRESHINT, (*env)->GetMethodID(env, snxApiClass, "onRefreshInt", "()V"));
+	qspSetCallBack(QSP_CALL_SETTIMER, (*env)->GetMethodID(env, snxApiClass, "onSetTimer", "(I)V"));
 	qspSetCallBack(QSP_CALL_SYSTEM, (*env)->GetMethodID(env, snxApiClass, "onSystem", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_SETINPUTSTRTEXT, (*env)->GetMethodID(env, snxApiClass, "setInputStrText", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_DELETEMENU, (*env)->GetMethodID(env, snxApiClass, "deleteMenu", "()V"));
-	qspSetCallBack(QSP_CALL_OPENGAMESTATUS, (*env)->GetMethodID(env, snxApiClass, "OpenGame", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_SAVEGAMESTATUS, (*env)->GetMethodID(env, snxApiClass, "SaveGame", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_SLEEP, (*env)->GetMethodID(env, snxApiClass, "Wait", "(I)V"));
-	qspSetCallBack(QSP_CALL_GETMSCOUNT, (*env)->GetMethodID(env, snxApiClass, "GetMSCount", "()I"));
-	qspSetCallBack(QSP_CALL_INPUTBOX, (*env)->GetMethodID(env, snxApiClass, "InputBox", "(Ljava/lang/String;)Ljava/lang/String;"));
-	qspSetCallBack(QSP_CALL_ADDMENUITEM, (*env)->GetMethodID(env, snxApiClass, "addMenuItem", "(Ljava/lang/String;Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_SETINPUTSTRTEXT, (*env)->GetMethodID(env, snxApiClass, "onSetInputStrText", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_DELETEMENU, (*env)->GetMethodID(env, snxApiClass, "onDeleteMenu", "()V"));
+	qspSetCallBack(QSP_CALL_OPENGAMESTATUS, (*env)->GetMethodID(env, snxApiClass, "onOpenGame", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_SAVEGAMESTATUS, (*env)->GetMethodID(env, snxApiClass, "onSaveGame", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_SLEEP, (*env)->GetMethodID(env, snxApiClass, "onSleep", "(I)V"));
+	qspSetCallBack(QSP_CALL_GETMSCOUNT, (*env)->GetMethodID(env, snxApiClass, "onGetMsCount", "()I"));
+	qspSetCallBack(QSP_CALL_INPUTBOX, (*env)->GetMethodID(env, snxApiClass, "onInputBox", "(Ljava/lang/String;)Ljava/lang/String;"));
+	qspSetCallBack(QSP_CALL_ADDMENUITEM, (*env)->GetMethodID(env, snxApiClass, "onAddMenuItem", "(Ljava/lang/String;Ljava/lang/String;)V"));
 }
 
 /* Deinitialization */

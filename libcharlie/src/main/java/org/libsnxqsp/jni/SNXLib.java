@@ -27,9 +27,9 @@ public abstract class SNXLib {
     public native Object QSPGetExprValue();//!!!STUB
     /* Main desc */
     public native String getMainDesc();
-    public native boolean QSPIsMainDescChanged();
+    public native boolean isMainDescChanged();
     /* Vars desc */
-    public native String QSPGetVarsDesc();
+    public native String getVarsDesc();
     public native boolean isVarsDescChanged();
     public native int getVarValuesCount(String name);
     public native Object QSPGetVarValues(String name, int ind);//!!!STUB
@@ -68,22 +68,22 @@ public abstract class SNXLib {
     public native boolean QSPRestartGame(boolean isRefresh);
 
     public void onSystem(String code) { }
-    public void CallDebug(String str) { }
-    public void RefreshInt() { }
-    public void ShowPicture(String path) { }
-    public void SetTimer(int msecs) { }
-    public void setInputStrText(String text) { }
-    public void ShowMessage(String message) { }
-    public void PlayFile(String path, int volume) { }
-    public boolean IsPlayingFile(final String path) { return false; }
-    public void CloseFile(String path) { }
-    public void OpenGame(String filename) { }
-    public void SaveGame(String filename) { }
-    public String InputBox(String prompt) { return null; }
-    public int GetMSCount() { return 0; }
-    public void addMenuItem(String name, String imgPath) { }
-    public int showMenu() { return -1; }
-    public void deleteMenu() { }
-    public void Wait(int msecs) { }
-    public void ShowWindow(int type, boolean isShow) { }
+    public void onDebug(String str) { }
+    public void onRefreshInt() { }
+    public void onShowImage(String path) { }
+    public void onSetTimer(int msecs) { }
+    public void onSetInputStrText(String text) { }
+    public void onShowMessage(String message) { }
+    public void onPlayFile(String path, int volume) { }
+    public boolean onIsPlayingFile(final String path) { return false; }
+    public void onCloseFile(String path) { }
+    public void onOpenGame(String filename) { }
+    public void onSaveGame(String filename) { }
+    public String onInputBox(String prompt) { return null; }
+    public int onGetMsCount() { return 0; }
+    public void onAddMenuItem(String name, String imgPath) { }
+    public int onShowMenu() { return -1; }
+    public void onDeleteMenu() { }
+    public void onSleep(int msecs) { }
+    public void onShowWindow(int type, boolean isShow) { }
 }
