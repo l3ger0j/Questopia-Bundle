@@ -15,8 +15,12 @@ import java.io.IOException
 object FileUtil {
     fun isWritableFile(context: Context, file: DocumentFile?): Boolean {
         if (file == null) return false
-        val canWrite = file.isWritable(context)
-        return file.exists() && file.isFile && canWrite
+        return file.exists() && file.isFile && file.isWritable(context)
+    }
+
+    fun isWritableDir(context: Context, dir: DocumentFile?): Boolean {
+        if (dir == null) return false
+        return dir.exists() && dir.isDirectory && dir.isWritable(context)
     }
 
     fun getFileContents(
