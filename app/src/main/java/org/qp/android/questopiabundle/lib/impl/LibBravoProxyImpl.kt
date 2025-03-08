@@ -172,8 +172,8 @@ class LibBravoProxyImpl(
             val gameDir = currGameDir
 
             for (element in QSPGetActionData()) {
-                var tempImagePath = element.image
-                val tempText = element.text
+                var tempImagePath = element.image ?: ""
+                val tempText = element.text ?: ""
 
                 if (isNotEmptyOrBlank(tempImagePath)) {
                     val tempPath = normalizeContentPath(getFilename(tempImagePath))
@@ -196,8 +196,8 @@ class LibBravoProxyImpl(
             val gameDir = currGameDir
 
             for (element in QSPGetObjectData()) {
-                var tempImagePath = element.image
-                val tempText = element.text
+                var tempImagePath = element.image ?: ""
+                val tempText = element.text ?: ""
 
                 if (tempText.contains("<img")) {
                     if (!isContainsHtmlTags(tempText)) {
@@ -391,8 +391,8 @@ class LibBravoProxyImpl(
     // region LibQpCallbacks
     override fun RefreshInt() {
         gameState = gameState.copy(
-            mainDesc = if (QSPIsMainDescChanged() && gameState.mainDesc != QSPGetMainDesc()) QSPGetMainDesc() else gameState.mainDesc,
-            varsDesc = if (QSPIsVarsDescChanged() && gameState.varsDesc != QSPGetVarsDesc()) QSPGetVarsDesc() else gameState.varsDesc,
+            mainDesc = if (QSPIsMainDescChanged() && gameState.mainDesc != QSPGetMainDesc()) QSPGetMainDesc() ?: "" else gameState.mainDesc,
+            varsDesc = if (QSPIsVarsDescChanged() && gameState.varsDesc != QSPGetVarsDesc()) QSPGetVarsDesc() ?: "" else gameState.varsDesc,
             actionsList = if (QSPIsActionsChanged() && gameState.actionsList !== actionsList) actionsList else gameState.actionsList,
             objectsList = if (QSPIsObjectsChanged() && gameState.objectsList !== objectsList) objectsList else gameState.objectsList
         )

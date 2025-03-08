@@ -168,8 +168,8 @@ class LibCharlieProxyImpl(
             val gameDir = currGameDir
 
             for (element in getActions()) {
-                var tempImagePath = element.image
-                val tempText = element.text
+                var tempImagePath = element.image ?: ""
+                val tempText = element.text ?: ""
 
                 if (isNotEmptyOrBlank(tempImagePath)) {
                     val tempPath = normalizeContentPath(getFilename(tempImagePath))
@@ -192,8 +192,8 @@ class LibCharlieProxyImpl(
             val gameDir = currGameDir
 
             for (element in getObjects()) {
-                var tempImagePath = element.image
-                val tempText = element.text
+                var tempImagePath = element.image ?: ""
+                val tempText = element.text ?: ""
 
                 if (tempText.contains("<img")) {
                     if (!isContainsHtmlTags(tempText)) {
@@ -385,8 +385,8 @@ class LibCharlieProxyImpl(
 
     override fun onRefreshInt() {
         gameState = gameState.copy(
-            mainDesc = if (isMainDescChanged && gameState.mainDesc != mainDesc) mainDesc else gameState.mainDesc,
-            varsDesc = if (isVarsDescChanged && gameState.varsDesc != varsDesc) varsDesc else gameState.varsDesc,
+            mainDesc = if (isMainDescChanged && gameState.mainDesc != mainDesc) mainDesc ?: "" else gameState.mainDesc,
+            varsDesc = if (isVarsDescChanged && gameState.varsDesc != varsDesc) varsDesc ?: "" else gameState.varsDesc,
             actionsList = if (isActionsChanged && gameState.actionsList !== actionsList) actionsList else gameState.actionsList,
             objectsList = if (isObjectsChanged && gameState.objectsList !== objectsList) objectsList else gameState.objectsList
         )
