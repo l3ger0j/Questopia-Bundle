@@ -34,7 +34,7 @@ import kotlin.concurrent.Volatile
 
 class LibAlphaProxyImpl(
     private val context: Context,
-    override var gameState: LibGameState
+    override var gameState: LibGameState = LibGameState()
 ) : QSPLib(), LibIProxy {
 
     private val TAG = javaClass.simpleName
