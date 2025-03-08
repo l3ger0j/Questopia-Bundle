@@ -148,21 +148,12 @@ class QuestopiaBundle : Service(), GameInterface {
     }
 
     override fun showLibDialog(dialog: LibTypeDialog?, inputString: String?): LibDialogRetValue? {
-        val wrap = LibDialogRetValue()
-
         try {
             return callbacks?.doOnShowDialog(LibResult(dialog), inputString)
         } catch (e: RemoteException) {
             Log.e("QuestopiaBundle", "Error", e)
+            return LibDialogRetValue()
         }
-
-        if (dialog == LibTypeDialog.DIALOG_MENU) {
-            wrap.outNumValue = -1
-        } else {
-            wrap.outTextValue = ""
-        }
-
-        return wrap
     }
 
     override fun changeVisWindow(type: LibTypeWindow?, show: Boolean) {

@@ -4,8 +4,8 @@ import android.os.Parcel
 import android.os.Parcelable
 
 data class LibMenuItem(
-    var name: String = "",
-    var pathToImage: String = ""
+    val name: String = "",
+    val pathToImage: String = ""
 ) : Parcelable {
 
     constructor(source: Parcel) : this(

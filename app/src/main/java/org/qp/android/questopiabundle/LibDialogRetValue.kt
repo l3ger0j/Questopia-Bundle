@@ -4,14 +4,14 @@ import android.os.Parcel
 import android.os.Parcelable
 
 data class LibDialogRetValue(
-    var outTextValue: String = "",
-    var outNumValue: Int = 0
+    val outTextValue: String = "",
+    val outNumValue: Int = 0
 ) : Parcelable {
 
-    constructor(source: Parcel) : this() {
-        outTextValue = source.readString() ?: ""
-        outNumValue = source.readInt()
-    }
+    constructor(source: Parcel) : this(
+        source.readString() ?: "",
+        source.readInt()
+    )
 
     override fun describeContents(): Int = 0
 
