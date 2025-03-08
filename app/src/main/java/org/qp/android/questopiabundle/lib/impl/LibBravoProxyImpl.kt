@@ -29,6 +29,7 @@ import org.qp.android.questopiabundle.utils.HtmlUtil.isContainsHtmlTags
 import org.qp.android.questopiabundle.utils.PathUtil.getFilename
 import org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath
 import org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty
+import org.qp.android.questopiabundle.utils.StringUtil.isEmptyOrBlank
 import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
 import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
 import java.util.concurrent.locks.ReentrantLock
@@ -171,9 +172,10 @@ class LibBravoProxyImpl(
             val actions = mutableListOf<LibListItem>()
             val gameDir = currGameDir
 
-            for (element in QSPGetActionData()) {
-                var tempImagePath = element.image ?: ""
-                val tempText = element.text ?: ""
+            for (element in QSPGetActionData() ?: return emptyList()) {
+                val safeElement = element ?: continue
+                var tempImagePath = safeElement.image ?: ""
+                val tempText = safeElement.text ?: ""
 
                 if (isNotEmptyOrBlank(tempImagePath)) {
                     val tempPath = normalizeContentPath(getFilename(tempImagePath))
@@ -195,7 +197,8 @@ class LibBravoProxyImpl(
             val objects = mutableListOf<LibListItem>()
             val gameDir = currGameDir
 
-            for (element in QSPGetObjectData()) {
+            for (element in QSPGetObjectData() ?: return emptyList()) {
+                val safeElement = element ?: continue
                 var tempImagePath = element.image ?: ""
                 val tempText = element.text ?: ""
 
@@ -409,32 +412,29 @@ class LibBravoProxyImpl(
         )
     }
 
-    override fun ShowPicture(path: String) {
-        val inter = gameInterface
+    override fun ShowPicture(path: String?) {
         if (!isNotEmptyOrBlank(path)) return
-        inter.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
     }
 
     override fun SetTimer(msecs: Int) {
-        val inter = gameInterface
-        inter.setCountInter(msecs)
+        gameInterface.setCountInter(msecs)
     }
 
-    override fun ShowMessage(message: String) {
-        val inter = gameInterface
-        inter.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, message)
+    override fun ShowMessage(message: String?) {
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, message)
     }
 
-    override fun PlayFile(path: String, volume: Int) {
+    override fun PlayFile(path: String?, volume: Int) {
         if (!isNotEmptyOrBlank(path)) return
         gameInterface.playFile(path, volume)
     }
 
-    override fun IsPlayingFile(path: String): Boolean {
-        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path)
+    override fun IsPlayingFile(path: String?): Boolean {
+        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path.toString())
     }
 
-    override fun CloseFile(path: String) {
+    override fun CloseFile(path: String?) {
         if (isNotEmptyOrBlank(path)) {
             gameInterface.closeFile(path)
         } else {
@@ -443,11 +443,11 @@ class LibBravoProxyImpl(
     }
 
     override fun OpenGame(filename: String?) {
-        if (filename == null) {
+        if (!isNotEmptyOrBlank(filename)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
             try {
-                val saveFile = fromFullPath(context, filename) ?: return
+                val saveFile = fromFullPath(context, filename.toString()) ?: return
                 gameInterface.requestPermFile(saveFile.uri)
                 if (isWritableFile(context, saveFile)) {
                     gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
@@ -475,7 +475,7 @@ class LibBravoProxyImpl(
         }
     }
 
-    override fun InputBox(prompt: String): String {
+    override fun InputBox(prompt: String?): String {
         val doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, prompt) ?: return ""
         return doShow.outTextValue
     }
@@ -490,11 +490,11 @@ class LibBravoProxyImpl(
         return dt
     }
 
-    override fun AddMenuItem(name: String, imgPath: String) {
-        val item = LibMenuItem()
-        item.name = name
-        item.pathToImage = imgPath
-        gameState = gameState.copy(menuItemsList = listOf(item))
+    override fun AddMenuItem(name: String?, imgPath: String?) {
+        gameState = gameState.copy(menuItemsList = listOf(LibMenuItem(
+            name ?: "",
+            imgPath ?: ""
+        )))
     }
 
     override fun ShowMenu() {
@@ -522,15 +522,18 @@ class LibBravoProxyImpl(
         gameInterface.changeVisWindow(windowType, isShow)
     }
 
-    override fun GetFileContents(path: String): ByteArray? {
-        val targetFile = fromFullPath(context, path) ?: return null
+    override fun GetFileContents(path: String?): ByteArray? {
+        if (isEmptyOrBlank(path)) return byteArrayOf()
+        val targetFile = fromFullPath(context, path.toString()) ?: return null
         val targetFileUri = targetFile.uri
         gameInterface.requestPermFile(targetFileUri)
-        return getFileContents(context, targetFileUri)!!
+        return getFileContents(context, targetFileUri)
     }
 
-    override fun ChangeQuestPath(path: String) {
-        val newGameDir = fromFullPath(context, path)
+    override fun ChangeQuestPath(path: String?) {
+        if (isEmptyOrBlank(path)) return
+
+        val newGameDir = fromFullPath(context, path.toString())
         if (newGameDir == null || !newGameDir.exists()) {
             Log.e(TAG, "Game directory not found: $path")
             return

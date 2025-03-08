@@ -1,91 +1,121 @@
-package org.libndkqsp.jni;
+package org.libndkqsp.jni
 
-public abstract class NDKLib {
+abstract class NDKLib {
+    @JvmRecord
+    data class ListItem(val image: String = "", val text: String = "")
 
-    public record ListItem(String image, String text) { }
+    @JvmRecord
+    data class ExecutionState(val loc: String, val actIndex: Int, val lineNum: Int)
 
-    public record ExecutionState(String loc, int actIndex, int lineNum) { }
+    @JvmRecord
+    data class VarValResp(val isSuccess: Boolean, val stringValue: String, val intValue: Int)
 
-    public record VarValResp(boolean isSuccess , String stringValue , int intValue) { }
+    @JvmRecord
+    data class ErrorData(val locName: String, val errorNum: Int, val index: Int, val line: Int)
 
-    public record ErrorData(String locName , int errorNum , int index , int line) { }
+    external fun QSPInit()
+    external fun QSPDeInit()
+    external fun QSPIsInCallBack(): Boolean
+    external fun QSPEnableDebugMode(isDebug: Boolean)
+    external fun QSPGetCurStateData(): Any? //!!!STUB
+    external fun QSPGetVersion(): String?
+    external fun QSPGetCompiledDateTime(): String?
+    external fun QSPGetFullRefreshCount(): Int
+    external fun QSPGetQstFullPath(): String?
+    external fun QSPGetCurLoc(): String?
+    external fun QSPGetExprValue(): Any? //!!!STUB
 
-    static {
-        System.loadLibrary("ndkqsp");
+    /* Main desc */
+    external fun QSPGetMainDesc(): String?
+    external fun QSPIsMainDescChanged(): Boolean
+
+    /* Vars desc */
+    external fun QSPGetVarsDesc(): String?
+    external fun QSPIsVarsDescChanged(): Boolean
+    external fun QSPGetVarValuesCount(name: String?): Any?
+    external fun QSPGetVarValues(name: String?, ind: Int): Any? //!!!STUB
+    external fun QSPGetMaxVarsCount(): Int
+    external fun QSPGetVarNameByIndex(index: Int): Any? //!!!STUB
+
+    /* Input string */
+    external fun QSPSetInputStrText(`val`: String?)
+
+    /* Actions */
+    external fun QSPGetActionsCount(): Int
+    external fun QSPGetActionData(): List<ListItem?>?
+    external fun QSPExecuteSelActionCode(isRefresh: Boolean): Boolean
+    external fun QSPSetSelActionIndex(ind: Int, isRefresh: Boolean): Boolean
+    external fun QSPGetSelActionIndex(): Int
+    external fun QSPIsActionsChanged(): Boolean
+
+    /* Objects */
+    external fun QSPGetObjectData(): List<ListItem?>?
+    external fun QSPGetObjectsCount(): Int
+    external fun QSPSetSelObjectIndex(ind: Int, isRefresh: Boolean): Boolean
+    external fun QSPGetSelObjectIndex(): Int
+    external fun QSPIsObjectsChanged(): Boolean
+
+    /* Code execution */
+    external fun QSPExecString(s: String?, isRefresh: Boolean): Boolean
+    external fun QSPExecLocationCode(name: String?, isRefresh: Boolean): Boolean
+    external fun QSPExecCounter(isRefresh: Boolean): Boolean
+    external fun QSPExecUserInput(isRefresh: Boolean): Boolean
+
+    /* Errors */
+    external fun QSPGetLastErrorData(): ErrorData?
+    external fun QSPGetErrorDesc(errorNum: Int): String?
+
+    /* Game */
+    external fun QSPLoadGameWorld(fileName: String?): Boolean
+    external fun QSPLoadGameWorldFromData(data: ByteArray?, fileName: String?): Boolean
+    external fun QSPSaveGame(fileName: String?, isRefresh: Boolean): Boolean
+    external fun QSPSaveGameAsData(isRefresh: Boolean): ByteArray?
+    external fun QSPOpenSavedGame(fileName: String?, isRefresh: Boolean): Boolean
+    external fun QSPOpenSavedGameFromData(
+        data: ByteArray?,
+        dataSize: Int,
+        isRefresh: Boolean
+    ): Boolean
+
+    external fun QSPRestartGame(isRefresh: Boolean): Boolean
+    external fun QSPSelectMenuItem(index: Int)
+
+    //public native void QSPSetCallBack(int type, QSP_CALLBACK func)
+    fun CallDebug(str: String?) {}
+    open fun RefreshInt() {}
+    open fun ShowPicture(path: String?) {}
+    open fun SetTimer(msecs: Int) {}
+    open fun ShowMessage(message: String?) {}
+    open fun PlayFile(path: String?, volume: Int) {}
+    open fun IsPlayingFile(path: String?): Boolean {
+        return false
     }
 
-    public native void QSPInit();
-    public native void QSPDeInit();
-    public native boolean QSPIsInCallBack();
-    public native void QSPEnableDebugMode(boolean isDebug);
-    public native Object QSPGetCurStateData();//!!!STUB
-    public native String QSPGetVersion();
-    public native String QSPGetCompiledDateTime();
-    public native int QSPGetFullRefreshCount();
-    public native String QSPGetQstFullPath();
-    public native String QSPGetCurLoc();
-    public native Object QSPGetExprValue();//!!!STUB
-    /* Main desc */
-    public native String QSPGetMainDesc();
-    public native boolean QSPIsMainDescChanged();
-    /* Vars desc */
-    public native String QSPGetVarsDesc();
-    public native boolean QSPIsVarsDescChanged();
-    public native Object QSPGetVarValuesCount(String name);
-    public native Object QSPGetVarValues(String name, int ind);//!!!STUB
-    public native int QSPGetMaxVarsCount();
-    public native Object QSPGetVarNameByIndex(int index);//!!!STUB
-    /* Input string */
-    public native void QSPSetInputStrText(String val);
-    /* Actions */
-    public native int QSPGetActionsCount();
-    public native ListItem[] QSPGetActionData();
-    public native boolean QSPExecuteSelActionCode(boolean isRefresh);
-    public native boolean QSPSetSelActionIndex(int ind, boolean isRefresh);
-    public native int QSPGetSelActionIndex();
-    public native boolean QSPIsActionsChanged();
-    /* Objects */
-    public native ListItem[] QSPGetObjectData();
-    public native int QSPGetObjectsCount();
-    public native boolean QSPSetSelObjectIndex(int ind, boolean isRefresh);
-    public native int QSPGetSelObjectIndex();
-    public native boolean QSPIsObjectsChanged();
-    /* Code execution */
-    public native boolean QSPExecString(String s, boolean isRefresh);
-    public native boolean QSPExecLocationCode(String name, boolean isRefresh);
-    public native boolean QSPExecCounter(boolean isRefresh);
-    public native boolean QSPExecUserInput(boolean isRefresh);
-    /* Errors */
-    public native ErrorData QSPGetLastErrorData();
-    public native String QSPGetErrorDesc(int errorNum);
-    /* Game */
-    public native boolean QSPLoadGameWorld(String fileName);
-    public native boolean QSPLoadGameWorldFromData(byte[] data, String fileName);
-    public native boolean QSPSaveGame(String fileName, boolean isRefresh);
-    public native byte[] QSPSaveGameAsData(boolean isRefresh);
-    public native boolean QSPOpenSavedGame(String fileName, boolean isRefresh);
-    public native boolean QSPOpenSavedGameFromData(byte[] data , int dataSize, boolean isRefresh);
-    public native boolean QSPRestartGame(boolean isRefresh);
-    public native void QSPSelectMenuItem(int index);
-    //public native void QSPSetCallBack(int type, QSP_CALLBACK func)
+    open fun CloseFile(path: String?) {}
+    open fun OpenGame(filename: String?) {}
+    open fun SaveGame(filename: String?) {}
+    open fun InputBox(prompt: String?): String? {
+        return null
+    }
 
-    public void CallDebug(String str) {}
-    public void RefreshInt() { }
-    public void ShowPicture(String path) { }
-    public void SetTimer(int msecs) { }
-    public void ShowMessage(String message) { }
-    public void PlayFile(String path, int volume) { }
-    public boolean IsPlayingFile(final String path) { return false; }
-    public void CloseFile(String path) { }
-    public void OpenGame(String filename) { }
-    public void SaveGame(String filename) { }
-    public String InputBox(String prompt) { return null; }
-    public int GetMSCount() { return 0; }
-    public void AddMenuItem(String name, String imgPath) { }
-    public void ShowMenu() { }
-    public void DeleteMenu() { }
-    public void Wait(int msecs) { }
-    public void ShowWindow(int type, boolean isShow) { }
-    public byte[] GetFileContents(String path) { return null; }
-    public void ChangeQuestPath(String path) { }
+    open fun GetMSCount(): Int {
+        return 0
+    }
+
+    open fun AddMenuItem(name: String?, imgPath: String?) {}
+    open fun ShowMenu() {}
+    open fun DeleteMenu() {}
+    open fun Wait(msecs: Int) {}
+    open fun ShowWindow(type: Int, isShow: Boolean) {}
+    open fun GetFileContents(path: String?): ByteArray? {
+        return null
+    }
+
+    open fun ChangeQuestPath(path: String?) {}
+
+    companion object {
+        init {
+            System.loadLibrary("ndkqsp")
+        }
+    }
 }
