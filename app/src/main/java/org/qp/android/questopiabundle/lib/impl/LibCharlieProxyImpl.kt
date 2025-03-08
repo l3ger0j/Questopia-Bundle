@@ -484,10 +484,10 @@ class LibCharlieProxyImpl(
     }
 
     override fun onAddMenuItem(name: String?, imgPath: String?) {
-        val item = LibMenuItem()
-        item.name = name ?: ""
-        item.pathToImage = imgPath ?: ""
-        gameState = gameState.copy(menuItemsList = listOf(item))
+        gameState = gameState.copy(menuItemsList = listOf(LibMenuItem(
+            name ?: "",
+            imgPath ?: ""
+        )))
     }
 
     override fun onShowMenu(): Int {
