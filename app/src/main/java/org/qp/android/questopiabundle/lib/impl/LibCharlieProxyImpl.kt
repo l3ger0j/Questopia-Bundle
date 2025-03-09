@@ -29,11 +29,11 @@ import org.qp.android.questopiabundle.utils.HtmlUtil.isContainsHtmlTags
 import org.qp.android.questopiabundle.utils.PathUtil.getFilename
 import org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath
 import org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty
-import org.qp.android.questopiabundle.utils.StringUtil.isEmptyOrBlank
 import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
 import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.Volatile
+import kotlin.contracts.ExperimentalContracts
 
 class LibCharlieProxyImpl(
     private val context: Context,
@@ -161,6 +161,7 @@ class LibCharlieProxyImpl(
         return changed
     }
 
+    @OptIn(ExperimentalContracts::class)
     private val actionsList: List<LibListItem>
         get() {
             if (!isWritableDir(context, currGameDir)) return emptyList()
@@ -175,7 +176,7 @@ class LibCharlieProxyImpl(
                     val tempPath = normalizeContentPath(getFilename(tempImagePath))
                     val fileFromPath = gameDir?.child(context, tempPath)
                     if (isWritableFile(context, fileFromPath)) {
-                        tempImagePath = fileFromPath?.uri.toString()
+                        tempImagePath = fileFromPath.uri.toString()
                     }
                 }
 
@@ -185,27 +186,28 @@ class LibCharlieProxyImpl(
             return actions
         }
 
+    @OptIn(ExperimentalContracts::class)
     private val objectsList: List<LibListItem>
         get() {
-            if (!isWritableDir(context, currGameDir)) return emptyList()
-            val objects = mutableListOf<LibListItem>()
             val gameDir = currGameDir
+            if (!isWritableDir(context, gameDir)) return emptyList()
 
+            val objects = mutableListOf<LibListItem>()
             for (element in getObjects()) {
                 var tempImagePath = element.image ?: ""
                 val tempText = element.text ?: ""
 
                 if (tempText.contains("<img")) {
                     if (!isContainsHtmlTags(tempText)) {
-                        val fileFromPath = gameDir?.child(context, tempText)
+                        val fileFromPath = gameDir.child(context, tempText)
                         if (isWritableFile(context, fileFromPath)) {
-                            tempImagePath = fileFromPath?.uri.toString()
+                            tempImagePath = fileFromPath.uri.toString()
                         }
                     } else {
                         val tempPath = getSrcDir(tempText)
-                        val fileFromPath = gameDir?.child(context, tempPath)
+                        val fileFromPath = gameDir.child(context, tempPath)
                         if (isWritableFile(context, fileFromPath)) {
-                            tempImagePath = fileFromPath?.uri.toString()
+                            tempImagePath = fileFromPath.uri.toString()
                         }
                     }
                 }
@@ -403,8 +405,9 @@ class LibCharlieProxyImpl(
         )
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onShowImage(path: String?) {
-        if (isEmptyOrBlank(path)) return
+        if (!isNotEmptyOrBlank(path)) return
         gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
     }
 
@@ -416,15 +419,20 @@ class LibCharlieProxyImpl(
         gameInterface.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, message)
     }
 
+
+    @OptIn(ExperimentalContracts::class)
     override fun onPlayFile(path: String?, volume: Int) {
-        if (isEmptyOrBlank(path)) return
+        if (!isNotEmptyOrBlank(path)) return
         gameInterface.playFile(path, volume)
     }
 
+
+    @OptIn(ExperimentalContracts::class)
     override fun onIsPlayingFile(path: String?): Boolean {
-        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path!!)
+        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path)
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onCloseFile(path: String?) {
         if (isNotEmptyOrBlank(path)) {
             gameInterface.closeFile(path)
@@ -433,12 +441,13 @@ class LibCharlieProxyImpl(
         }
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onOpenGame(filename: String?) {
-        if (isEmptyOrBlank(filename)) {
+        if (!isNotEmptyOrBlank(filename)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
             try {
-                val saveFile = fromFullPath(context, filename!!) ?: return
+                val saveFile = fromFullPath(context, filename) ?: return
                 gameInterface.requestPermFile(saveFile.uri)
                 if (isWritableFile(context, saveFile)) {
                     gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
@@ -453,12 +462,13 @@ class LibCharlieProxyImpl(
         }
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onSaveGame(filename: String?) {
-        if (isEmptyOrBlank(filename)) {
+        if (!isNotEmptyOrBlank(filename)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null)
         } else {
             val currGameDir = currGameDir ?: return
-            val saveFileUri = gameInterface.requestCreateFile(currGameDir.uri, filename!!)
+            val saveFileUri = gameInterface.requestCreateFile(currGameDir.uri, filename)
             if (saveFileUri != Uri.EMPTY) {
                 saveGameState(saveFileUri)
             } else {

@@ -29,11 +29,11 @@ import org.qp.android.questopiabundle.utils.HtmlUtil.isContainsHtmlTags
 import org.qp.android.questopiabundle.utils.PathUtil.getFilename
 import org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath
 import org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty
-import org.qp.android.questopiabundle.utils.StringUtil.isEmptyOrBlank
 import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
 import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.Volatile
+import kotlin.contracts.ExperimentalContracts
 
 class LibBravoProxyImpl(
     private val context: Context,
@@ -166,58 +166,61 @@ class LibBravoProxyImpl(
         return changed
     }
 
+    @OptIn(ExperimentalContracts::class)
     private val actionsList: List<LibListItem>
         get() {
-            if (!isWritableDir(context, currGameDir)) return emptyList()
-            val actions = mutableListOf<LibListItem>()
             val gameDir = currGameDir
+            if (!isWritableDir(context, gameDir)) return emptyList()
+
+            val actions = mutableListOf<LibListItem>()
 
             for (element in QSPGetActionData() ?: return emptyList()) {
                 val safeElement = element ?: continue
-                var tempImagePath = safeElement.image ?: ""
-                val tempText = safeElement.text ?: ""
+                var tempImagePath = safeElement.image
+                val tempText = safeElement.text
 
                 if (isNotEmptyOrBlank(tempImagePath)) {
                     val tempPath = normalizeContentPath(getFilename(tempImagePath))
-                    val fileFromPath = gameDir?.child(context, tempPath)
+                    val fileFromPath = gameDir.child(context, tempPath)
                     if (isWritableFile(context, fileFromPath)) {
-                        tempImagePath = fileFromPath?.uri.toString()
+                        tempImagePath = fileFromPath.uri.toString()
                     }
                 }
 
-                actions.add(LibListItem(tempText, tempImagePath))
+                actions.add(LibListItem(tempText ?: "", tempImagePath ?: ""))
             }
 
             return actions
         }
 
+    @OptIn(ExperimentalContracts::class)
     private val objectsList: List<LibListItem>
         get() {
-            if (!isWritableDir(context, currGameDir)) return emptyList()
-            val objects = mutableListOf<LibListItem>()
             val gameDir = currGameDir
+            if (!isWritableDir(context, gameDir)) return emptyList()
 
+            val objects = mutableListOf<LibListItem>()
             for (element in QSPGetObjectData() ?: return emptyList()) {
                 val safeElement = element ?: continue
-                var tempImagePath = element.image ?: ""
-                val tempText = element.text ?: ""
+                var tempImagePath = safeElement.image
+                val tempText = safeElement.text
 
                 if (tempText.contains("<img")) {
                     if (!isContainsHtmlTags(tempText)) {
-                        val fileFromPath = gameDir?.child(context, tempText)
+                        val fileFromPath = gameDir.child(context, tempText)
                         if (isWritableFile(context, fileFromPath)) {
-                            tempImagePath = fileFromPath?.uri.toString()
+                            tempImagePath = fileFromPath.uri.toString()
                         }
                     } else {
                         val tempPath = getSrcDir(tempText)
-                        val fileFromPath = gameDir?.child(context, tempPath)
+                        val fileFromPath = gameDir.child(context, tempPath)
                         if (isWritableFile(context, fileFromPath)) {
-                            tempImagePath = fileFromPath?.uri.toString()
+                            tempImagePath = fileFromPath.uri.toString()
                         }
                     }
                 }
 
-                objects.add(LibListItem(tempText, tempImagePath))
+                objects.add(LibListItem(tempText ?: "", tempImagePath ?: ""))
             }
 
             return objects
@@ -412,6 +415,7 @@ class LibBravoProxyImpl(
         )
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun ShowPicture(path: String?) {
         if (!isNotEmptyOrBlank(path)) return
         gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
@@ -425,15 +429,18 @@ class LibBravoProxyImpl(
         gameInterface.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, message)
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun PlayFile(path: String?, volume: Int) {
         if (!isNotEmptyOrBlank(path)) return
         gameInterface.playFile(path, volume)
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun IsPlayingFile(path: String?): Boolean {
-        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path.toString())
+        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path)
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun CloseFile(path: String?) {
         if (isNotEmptyOrBlank(path)) {
             gameInterface.closeFile(path)
@@ -442,12 +449,13 @@ class LibBravoProxyImpl(
         }
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun OpenGame(filename: String?) {
         if (!isNotEmptyOrBlank(filename)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
             try {
-                val saveFile = fromFullPath(context, filename.toString()) ?: return
+                val saveFile = fromFullPath(context, filename) ?: return
                 gameInterface.requestPermFile(saveFile.uri)
                 if (isWritableFile(context, saveFile)) {
                     gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
@@ -522,16 +530,20 @@ class LibBravoProxyImpl(
         gameInterface.changeVisWindow(windowType, isShow)
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun GetFileContents(path: String?): ByteArray? {
-        if (isEmptyOrBlank(path)) return byteArrayOf()
+        if (!isNotEmptyOrBlank(path)) return byteArrayOf()
+
         val targetFile = fromFullPath(context, path.toString()) ?: return null
         val targetFileUri = targetFile.uri
         gameInterface.requestPermFile(targetFileUri)
+
         return getFileContents(context, targetFileUri)
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun ChangeQuestPath(path: String?) {
-        if (isEmptyOrBlank(path)) return
+        if (!isNotEmptyOrBlank(path)) return
 
         val newGameDir = fromFullPath(context, path.toString())
         if (newGameDir == null || !newGameDir.exists()) {

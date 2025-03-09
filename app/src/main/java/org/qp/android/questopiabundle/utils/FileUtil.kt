@@ -11,14 +11,24 @@ import com.anggrayudi.storage.file.isWritable
 import org.qp.android.questopiabundle.utils.StreamUtil.copy
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 object FileUtil {
+    @ExperimentalContracts
     fun isWritableFile(context: Context, file: DocumentFile?): Boolean {
+        contract {
+            returns() implies (file != null)
+        }
         if (file == null) return false
         return file.exists() && file.isFile && file.isWritable(context)
     }
 
+    @ExperimentalContracts
     fun isWritableDir(context: Context, dir: DocumentFile?): Boolean {
+        contract {
+            returns() implies (dir != null)
+        }
         if (dir == null) return false
         return dir.exists() && dir.isDirectory && dir.isWritable(context)
     }

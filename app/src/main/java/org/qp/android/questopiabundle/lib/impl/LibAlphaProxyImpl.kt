@@ -31,6 +31,7 @@ import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
 import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.Volatile
+import kotlin.contracts.ExperimentalContracts
 
 class LibAlphaProxyImpl(
     private val context: Context,
@@ -120,6 +121,7 @@ class LibAlphaProxyImpl(
         }
     }
 
+    @OptIn(ExperimentalContracts::class)
     private val actionsList: List<LibListItem>
         get() {
             if (!isWritableDir(context, currGameDir)) return emptyList()
@@ -134,7 +136,7 @@ class LibAlphaProxyImpl(
                     val tempPath = normalizeContentPath(getFilename(tempImagePath))
                     val fileFromPath = gameDir?.child(context, tempPath)
                     if (isWritableFile(context, fileFromPath)) {
-                        tempImagePath = fileFromPath?.uri.toString()
+                        tempImagePath = fileFromPath.uri.toString()
                     }
                 }
 
@@ -144,6 +146,7 @@ class LibAlphaProxyImpl(
             return actions
         }
 
+    @OptIn(ExperimentalContracts::class)
     private val objectsList: List<LibListItem>
         get() {
             if (!isWritableDir(context, currGameDir)) return emptyList()
@@ -158,13 +161,13 @@ class LibAlphaProxyImpl(
                     if (!isContainsHtmlTags(tempText)) {
                         val fileFromPath = gameDir?.child(context, tempText)
                         if (isWritableFile(context, fileFromPath)) {
-                            tempImagePath = fileFromPath?.uri.toString()
+                            tempImagePath = fileFromPath.uri.toString()
                         }
                     } else {
                         val tempPath = getSrcDir(tempText)
                         val fileFromPath = gameDir?.child(context, tempPath)
                         if (isWritableFile(context, fileFromPath)) {
-                            tempImagePath = fileFromPath?.uri.toString()
+                            tempImagePath = fileFromPath.uri.toString()
                         }
                     }
                 }
@@ -370,6 +373,7 @@ class LibAlphaProxyImpl(
         )
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onShowImage(file: String) {
         if (!isNotEmptyOrBlank(file)) return
         gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, file)
@@ -383,15 +387,18 @@ class LibAlphaProxyImpl(
         gameInterface.showLibDialog(LibTypeDialog.DIALOG_MESSAGE, text)
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onPlayFile(file: String, volume: Int) {
         if (!isNotEmptyOrBlank(file)) return
         gameInterface.playFile(file, volume)
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onIsPlayingFile(file: String): Boolean {
         return isNotEmptyOrBlank(file) && gameInterface.isPlayingFile(file)
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onCloseFile(file: String) {
         if (isNotEmptyOrBlank(file)) {
             gameInterface.closeFile(file)
@@ -400,6 +407,7 @@ class LibAlphaProxyImpl(
         }
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onOpenGameStatus(file: String?) {
         if (file == null) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
