@@ -74,7 +74,7 @@ class LibCharlieProxyImpl(
         val gameFileFullPath = documentWrap(gameFile!!).getAbsolutePath(context)
         val gameData = getFileContents(context, gameFileUri) ?: return false
 
-        if (!loadGameWorldFromData(gameData, gameData.size, gameFileFullPath)) {
+        if (!loadGameWorldFromData(gameData, gameFileFullPath)) {
             showLastQspError()
             return false
         }
@@ -105,7 +105,7 @@ class LibCharlieProxyImpl(
         val config = gameState.interfaceConfig
         var changed = false
 
-        val htmlResult = QSPGetVarValues("USEHTML", 0) as VarValResp
+        val htmlResult = getVarValues("USEHTML", 0)
         if (htmlResult.isSuccess) {
             val useHtml = htmlResult.intValue != 0
             if (config.useHtml != useHtml) {
@@ -118,7 +118,7 @@ class LibCharlieProxyImpl(
             }
         }
 
-        val fSizeResult = QSPGetVarValues("FSIZE", 0) as VarValResp
+        val fSizeResult = getVarValues("FSIZE", 0)
         if (fSizeResult.isSuccess && config.fontSize != fSizeResult.intValue.toLong()) {
             gameState = gameState.copy(
                 interfaceConfig = config.copy(
@@ -128,7 +128,7 @@ class LibCharlieProxyImpl(
             changed = true
         }
 
-        val bColorResult = QSPGetVarValues("BCOLOR", 0) as VarValResp
+        val bColorResult = getVarValues("BCOLOR", 0)
         if (bColorResult.isSuccess && config.backColor != bColorResult.intValue.toLong()) {
             gameState = gameState.copy(
                 interfaceConfig = config.copy(
@@ -138,7 +138,7 @@ class LibCharlieProxyImpl(
             changed = true
         }
 
-        val fColorResult = QSPGetVarValues("FCOLOR", 0) as VarValResp
+        val fColorResult = getVarValues("FCOLOR", 0)
         if (fColorResult.isSuccess && config.fontColor != fColorResult.intValue.toLong()) {
             gameState = gameState.copy(
                 interfaceConfig = config.copy(
@@ -148,7 +148,7 @@ class LibCharlieProxyImpl(
             changed = true
         }
 
-        val lColorResult = QSPGetVarValues("LCOLOR", 0) as VarValResp
+        val lColorResult = getVarValues("LCOLOR", 0)
         if (lColorResult.isSuccess && config.linkColor != lColorResult.intValue.toLong()) {
             gameState = gameState.copy(
                 interfaceConfig = config.copy(
@@ -288,7 +288,7 @@ class LibCharlieProxyImpl(
             if (!loadGameWorld()) return@doWithCounterDisabled
             gameStartTime = SystemClock.elapsedRealtime()
             lastMsCountCallTime = 0
-            if (!QSPRestartGame(true)) {
+            if (!restartGame(true)) {
                 showLastQspError()
             }
         }
@@ -302,7 +302,7 @@ class LibCharlieProxyImpl(
 
         gameInterface.requestPermFile(uri)
         val gameData = getFileContents(context, uri) ?: return
-        if (!QSPOpenSavedGameFromData(gameData, gameData.size, true)) {
+        if (!openSavedGameFromData(gameData, true)) {
             showLastQspError()
         }
     }
@@ -314,7 +314,7 @@ class LibCharlieProxyImpl(
         }
 
         gameInterface.requestPermFile(uri)
-        val gameData = QSPSaveGameAsData(false) ?: return
+        val gameData = saveGameAsData(false) ?: return
         writeFileContents(context, uri, gameData)
     }
 
@@ -343,7 +343,7 @@ class LibCharlieProxyImpl(
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle")
                     ?: return@runOnQspThread
             val input = doShow.outTextValue
-            QSPSetInputStrText(input)
+            setInputStrText(input)
             if (!execUserInput(true)) {
                 showLastQspError()
             }

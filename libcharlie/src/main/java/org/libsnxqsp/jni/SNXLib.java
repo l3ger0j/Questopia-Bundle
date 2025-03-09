@@ -16,9 +16,8 @@ public abstract class SNXLib {
 
     public native void init();
     public native void terminate();
-    public native boolean QSPIsInCallBack();
     public native void QSPEnableDebugMode(boolean isDebug);
-    public native Object QSPGetCurStateData();//!!!STUB
+    public native ExecutionState QSPGetCurStateData();
     public native String QSPGetVersion();
     public native String QSPGetCompiledDateTime();
     public native int QSPGetFullRefreshCount();
@@ -32,13 +31,12 @@ public abstract class SNXLib {
     public native String getVarsDesc();
     public native boolean isVarsDescChanged();
     public native int getVarValuesCount(String name);
-    public native Object QSPGetVarValues(String name, int ind);//!!!STUB
+    public native VarValResp getVarValues(String name, int ind);//!!!STUB
     public native int QSPGetMaxVarsCount();
     public native Object QSPGetVarNameByIndex(int index);//!!!STUB
     /* Input string */
-    public native void QSPSetInputStrText(String val);
+    public native void setInputStrText(String val);
     /* Actions */
-    public native int getActionsCount();
     public native ListItem[] getActions();
     public native boolean executeSelActionCode(boolean isRefresh);
     public native boolean setSelActionIndex(int ind, boolean isRefresh);
@@ -46,7 +44,6 @@ public abstract class SNXLib {
     public native boolean isActionsChanged();
     /* Objects */
     public native ListItem[] getObjects();
-    public native int getObjectsCount();
     public native boolean setSelObjectIndex(int ind, boolean isRefresh);
     public native int getSelObjectIndex();
     public native boolean isObjectsChanged();
@@ -59,13 +56,10 @@ public abstract class SNXLib {
     public native ErrorData getLastErrorData();
     public native String getErrorDesc(int errorNum);
     /* Game */
-    public native boolean QSPLoadGameWorld(String fileName);
-    public native boolean loadGameWorldFromData(byte[] data , int dataSize, String fileName);
-    public native boolean QSPSaveGame(String fileName, boolean isRefresh);
-    public native byte[] QSPSaveGameAsData(boolean isRefresh);
-    public native boolean QSPOpenSavedGame(String fileName, boolean isRefresh);
-    public native boolean QSPOpenSavedGameFromData(byte[] data , int dataSize, boolean isRefresh);
-    public native boolean QSPRestartGame(boolean isRefresh);
+    public native boolean loadGameWorldFromData(byte[] data,  String fileName);
+    public native byte[] saveGameAsData(boolean isRefresh);
+    public native boolean openSavedGameFromData(byte[] data, boolean isRefresh);
+    public native boolean restartGame(boolean isRefresh);
 
     public void onSystem(String code) { }
     public void onDebug(String str) { }
