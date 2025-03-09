@@ -96,61 +96,28 @@ class LibAlphaProxyImpl(
      * @return `true` if the configuration has changed, otherwise `false`
      */
     private fun loadInterfaceConfiguration(): Boolean {
-        val config = gameState.interfaceConfig
-        var changed = false
-
         val htmlResult = getNumVarValue("USEHTML", 0)
-        val useHtml = htmlResult != 0L
-        if (config.useHtml != useHtml) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    useHtml = useHtml
-                )
-            )
-            changed = true
-        }
-
         val fSizeResult = getNumVarValue("FSIZE", 0)
-        if (config.fontSize != fSizeResult) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    fontSize = fSizeResult
-                )
-            )
-            changed = true
-        }
-
         val bColorResult = getNumVarValue("BCOLOR", 0)
-        if (config.backColor != bColorResult) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    backColor = bColorResult
-                )
-            )
-            changed = true
-        }
-
         val fColorResult = getNumVarValue("FCOLOR", 0)
-        if (config.fontColor != fColorResult) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    fontColor = fColorResult
-                )
-            )
-            changed = true
-        }
-
         val lColorResult = getNumVarValue("LCOLOR", 0)
-        if (config.linkColor != lColorResult) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    linkColor = lColorResult
-                )
-            )
-            changed = true
-        }
 
-        return changed
+        val useHtml = htmlResult != 0L
+        val newConfig = gameState.interfaceConfig.copy(
+            useHtml = useHtml,
+            fontSize = fSizeResult,
+            backColor = bColorResult,
+            fontColor = fColorResult,
+            linkColor = lColorResult
+        )
+
+        return when {
+            newConfig != gameState.interfaceConfig -> {
+                gameState = gameState.copy(interfaceConfig = newConfig)
+                true
+            }
+            else -> false
+        }
     }
 
     private val actionsList: List<LibListItem>
