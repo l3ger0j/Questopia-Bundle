@@ -102,63 +102,30 @@ class LibCharlieProxyImpl(
      * @return `true` if the configuration has changed, otherwise `false`
      */
     private fun loadInterfaceConfiguration(): Boolean {
-        val config = gameState.interfaceConfig
-        var changed = false
+        val oldConfig = gameState.interfaceConfig
 
         val htmlResult = getVarValues("USEHTML", 0)
-        if (htmlResult.isSuccess) {
-            val useHtml = htmlResult.intValue != 0
-            if (config.useHtml != useHtml) {
-                gameState = gameState.copy(
-                    interfaceConfig = config.copy(
-                        useHtml = useHtml
-                    )
-                )
-                changed = true
-            }
-        }
-
         val fSizeResult = getVarValues("FSIZE", 0)
-        if (fSizeResult.isSuccess && config.fontSize != fSizeResult.intValue.toLong()) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    fontSize = fSizeResult.intValue.toLong()
-                )
-            )
-            changed = true
-        }
-
         val bColorResult = getVarValues("BCOLOR", 0)
-        if (bColorResult.isSuccess && config.backColor != bColorResult.intValue.toLong()) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    backColor = bColorResult.intValue.toLong()
-                )
-            )
-            changed = true
-        }
-
         val fColorResult = getVarValues("FCOLOR", 0)
-        if (fColorResult.isSuccess && config.fontColor != fColorResult.intValue.toLong()) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    fontColor = fColorResult.intValue.toLong()
-                )
-            )
-            changed = true
-        }
-
         val lColorResult = getVarValues("LCOLOR", 0)
-        if (lColorResult.isSuccess && config.linkColor != lColorResult.intValue.toLong()) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    linkColor = lColorResult.intValue.toLong()
-                )
-            )
-            changed = true
-        }
 
-        return changed
+        val useHtml = htmlResult.intValue != 0
+        val newConfig = oldConfig.copy(
+            useHtml = if (htmlResult.isSuccess) useHtml else oldConfig.useHtml,
+            fontSize = if (fSizeResult.isSuccess) fSizeResult.intValue.toLong() else oldConfig.fontSize,
+            backColor = if (bColorResult.isSuccess) bColorResult.intValue.toLong() else oldConfig.backColor,
+            fontColor = if (fColorResult.isSuccess) fColorResult.intValue.toLong() else oldConfig.fontColor,
+            linkColor = if (lColorResult.isSuccess) lColorResult.intValue.toLong() else oldConfig.linkColor
+        )
+
+        return when {
+            newConfig != oldConfig -> {
+                gameState = gameState.copy(interfaceConfig = newConfig)
+                true
+            }
+            else -> false
+        }
     }
 
     @OptIn(ExperimentalContracts::class)
@@ -386,16 +353,17 @@ class LibCharlieProxyImpl(
     }
 
     override fun onRefreshInt() {
-        gameState = gameState.copy(
-            mainDesc = if (isMainDescChanged && gameState.mainDesc != mainDesc) mainDesc ?: "" else gameState.mainDesc,
-            varsDesc = if (isVarsDescChanged && gameState.varsDesc != varsDesc) varsDesc ?: "" else gameState.varsDesc,
-            actionsList = if (isActionsChanged && gameState.actionsList !== actionsList) actionsList else gameState.actionsList,
-            objectsList = if (isObjectsChanged && gameState.objectsList !== objectsList) objectsList else gameState.objectsList
+        val newState = gameState.copy(
+            mainDesc = if (isMainDescChanged) mainDesc else gameState.mainDesc,
+            varsDesc = if (isVarsDescChanged) varsDesc else gameState.varsDesc,
+            actionsList = if (isActionsChanged) actionsList else gameState.actionsList,
+            objectsList = if (isObjectsChanged) objectsList else gameState.objectsList
         )
 
-        val request = LibRefIRequest()
+        gameState = if (newState != gameState) newState else gameState
+
         gameInterface.doRefresh(
-            request.copy(
+            LibRefIRequest(
                 isIConfigChanged = loadInterfaceConfiguration(),
                 isMainDescChanged = isMainDescChanged,
                 isVarsDescChanged = isVarsDescChanged,

@@ -353,17 +353,21 @@ class LibAlphaProxyImpl(
                 objectsList = objectsList
             )
         } else {
-            gameState.copy(
-                mainDesc = if (isMainDescChanged && gameState.mainDesc != mainDesc) mainDesc else gameState.mainDesc,
-                varsDesc = if (isVarsDescChanged && gameState.varsDesc != varsDesc) varsDesc else gameState.varsDesc,
-                actionsList = if (isActsChanged && gameState.actionsList !== actionsList) actionsList else gameState.actionsList,
-                objectsList = if (isObjsChanged && gameState.objectsList !== objectsList) objectsList else gameState.objectsList
+            val newState = gameState.copy(
+                mainDesc = if (isMainDescChanged) mainDesc else gameState.mainDesc,
+                varsDesc = if (isVarsDescChanged) varsDesc else gameState.varsDesc,
+                actionsList = if (isActsChanged) actionsList else gameState.actionsList,
+                objectsList = if (isObjsChanged) objectsList else gameState.objectsList
             )
+
+            when (newState != gameState) {
+                true -> newState
+                false -> gameState
+            }
         }
 
-        val request = LibRefIRequest()
         gameInterface.doRefresh(
-            request.copy(
+            LibRefIRequest(
                 isIConfigChanged = loadInterfaceConfiguration(),
                 isMainDescChanged = isMainDescChanged,
                 isVarsDescChanged = isVarsDescChanged,

@@ -107,63 +107,30 @@ class LibBravoProxyImpl(
      * @return `true` if the configuration has changed, otherwise `false`
      */
     private fun loadInterfaceConfiguration(): Boolean {
-        val config = gameState.interfaceConfig
-        var changed = false
+        val oldConfig = gameState.interfaceConfig
 
         val htmlResult = QSPGetVarValues("USEHTML", 0) as VarValResp
-        if (htmlResult.isSuccess) {
-            val useHtml = htmlResult.intValue != 0
-            if (config.useHtml != useHtml) {
-                gameState = gameState.copy(
-                    interfaceConfig = config.copy(
-                        useHtml = useHtml
-                    )
-                )
-                changed = true
-            }
-        }
-
         val fSizeResult = QSPGetVarValues("FSIZE", 0) as VarValResp
-        if (fSizeResult.isSuccess && config.fontSize != fSizeResult.intValue.toLong()) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    fontSize = fSizeResult.intValue.toLong()
-                )
-            )
-            changed = true
-        }
-
         val bColorResult = QSPGetVarValues("BCOLOR", 0) as VarValResp
-        if (bColorResult.isSuccess && config.backColor != bColorResult.intValue.toLong()) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    backColor = bColorResult.intValue.toLong()
-                )
-            )
-            changed = true
-        }
-
         val fColorResult = QSPGetVarValues("FCOLOR", 0) as VarValResp
-        if (fColorResult.isSuccess && config.fontColor != fColorResult.intValue.toLong()) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    fontColor = fColorResult.intValue.toLong()
-                )
-            )
-            changed = true
-        }
-
         val lColorResult = QSPGetVarValues("LCOLOR", 0) as VarValResp
-        if (lColorResult.isSuccess && config.linkColor != lColorResult.intValue.toLong()) {
-            gameState = gameState.copy(
-                interfaceConfig = config.copy(
-                    linkColor = lColorResult.intValue.toLong()
-                )
-            )
-            changed = true
-        }
 
-        return changed
+        val useHtml = htmlResult.intValue != 0
+        val newConfig = oldConfig.copy(
+            useHtml = if (htmlResult.isSuccess) useHtml else oldConfig.useHtml,
+            fontSize = if (fSizeResult.isSuccess) fSizeResult.intValue.toLong() else oldConfig.fontSize,
+            backColor = if (bColorResult.isSuccess) bColorResult.intValue.toLong() else oldConfig.backColor,
+            fontColor = if (fColorResult.isSuccess) fColorResult.intValue.toLong() else oldConfig.fontColor,
+            linkColor = if (lColorResult.isSuccess) lColorResult.intValue.toLong() else oldConfig.linkColor
+        )
+
+        return when {
+            newConfig != oldConfig -> {
+                gameState = gameState.copy(interfaceConfig = newConfig)
+                true
+            }
+            else -> false
+        }
     }
 
     @OptIn(ExperimentalContracts::class)
@@ -396,16 +363,17 @@ class LibBravoProxyImpl(
     // endregion LibQpProxy
     // region LibQpCallbacks
     override fun RefreshInt() {
-        gameState = gameState.copy(
-            mainDesc = if (QSPIsMainDescChanged() && gameState.mainDesc != QSPGetMainDesc()) QSPGetMainDesc() ?: "" else gameState.mainDesc,
-            varsDesc = if (QSPIsVarsDescChanged() && gameState.varsDesc != QSPGetVarsDesc()) QSPGetVarsDesc() ?: "" else gameState.varsDesc,
-            actionsList = if (QSPIsActionsChanged() && gameState.actionsList !== actionsList) actionsList else gameState.actionsList,
-            objectsList = if (QSPIsObjectsChanged() && gameState.objectsList !== objectsList) objectsList else gameState.objectsList
+        val newState = gameState.copy(
+            mainDesc = if (QSPIsMainDescChanged()) QSPGetMainDesc() ?: "" else gameState.mainDesc,
+            varsDesc = if (QSPIsVarsDescChanged()) QSPGetVarsDesc() ?: "" else gameState.varsDesc,
+            actionsList = if (QSPIsActionsChanged()) actionsList else gameState.actionsList,
+            objectsList = if (QSPIsObjectsChanged()) objectsList else gameState.objectsList
         )
 
-        val request = LibRefIRequest()
+        gameState = if (newState != gameState) newState else gameState
+
         gameInterface.doRefresh(
-            request.copy(
+            LibRefIRequest(
                 isIConfigChanged = loadInterfaceConfiguration(),
                 isMainDescChanged = QSPIsMainDescChanged(),
                 isVarsDescChanged = QSPIsVarsDescChanged(),
