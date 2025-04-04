@@ -256,23 +256,6 @@ class QuestopiaBundle : Service(), GameInterface {
             gameDirUri: Uri,
             gameFileUri: Uri
         ) {
-            Log.i(
-                javaClass.simpleName,
-                checkCallingPermission("android.permission.WRITE_EXTERNAL_STORAGE").toString()
-            )
-            Log.i(
-                javaClass.simpleName,
-                checkSelfPermission("android.permission.WRITE_EXTERNAL_STORAGE").toString()
-            )
-            Log.i(
-                javaClass.simpleName, getAccessibleAbsolutePaths(
-                    baseContext
-                ).toString()
-            )
-            Log.d(
-                javaClass.simpleName,
-                "Debug: \nGameID|$gameId\nGameTitle|$gameTitle\nGameDirUri|$gameDirUri\nGameFileUri|$gameFileUri"
-            )
             when (mLibVersion) {
                 570 -> libBravoProxy.runGame(gameId, gameTitle, gameDirUri, gameFileUri)
 
