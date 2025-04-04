@@ -23,9 +23,9 @@ class QuestopiaBundle : Service(), GameInterface {
     private val counterHandler = Handler(Looper.myLooper() ?: Looper.getMainLooper())
     private val counterNDKHandler = Handler(Looper.myLooper() ?: Looper.getMainLooper())
     private val counterSNXHandler = Handler(Looper.myLooper() ?: Looper.getMainLooper())
-    private lateinit var libAlphaProxy: LibAlphaProxyImpl
-    private lateinit var libBravoProxy: LibBravoProxyImpl
-    private lateinit var libCharlieProxy: LibCharlieProxyImpl
+    private val libAlphaProxy: LibAlphaProxyImpl = LibAlphaProxyImpl(this@QuestopiaBundle)
+    private val libBravoProxy: LibBravoProxyImpl = LibBravoProxyImpl(this@QuestopiaBundle)
+    private val libCharlieProxy: LibCharlieProxyImpl = LibCharlieProxyImpl(this@QuestopiaBundle)
     private var callbacks: AsyncCallbacks? = null
 
     @Volatile
@@ -99,14 +99,6 @@ class QuestopiaBundle : Service(), GameInterface {
             callbacks?.playFile(path, volume)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
-        }
-    }
-
-    fun setCallback() {
-        when (mLibVersion) {
-            570 -> counterNDKHandler.postDelayed(counterNDKTask, counterInterval.toLong())
-            575 -> counterSNXHandler.postDelayed(counterSNXTask, counterInterval.toLong())
-            592 -> counterHandler.postDelayed(counterTask, counterInterval.toLong())
         }
     }
 
@@ -211,24 +203,21 @@ class QuestopiaBundle : Service(), GameInterface {
             mLibVersion = libVer
             when (mLibVersion) {
                 570 -> {
-                    libBravoProxy = LibBravoProxyImpl(this@QuestopiaBundle)
-                    setCallback()
+                    counterNDKHandler.postDelayed(counterNDKTask, counterInterval.toLong())
 
                     libBravoProxy.setGameInterface(this@QuestopiaBundle)
                     libBravoProxy.startLibThread()
                 }
 
                 575 -> {
-                    libCharlieProxy = LibCharlieProxyImpl(this@QuestopiaBundle)
-                    setCallback()
+                    counterSNXHandler.postDelayed(counterSNXTask, counterInterval.toLong())
 
                     libCharlieProxy.setGameInterface(this@QuestopiaBundle)
                     libCharlieProxy.startLibThread()
                 }
 
                 592 -> {
-                    libAlphaProxy = LibAlphaProxyImpl(this@QuestopiaBundle)
-                    setCallback()
+                    counterHandler.postDelayed(counterTask, counterInterval.toLong())
 
                     libAlphaProxy.setGameInterface(this@QuestopiaBundle)
                     libAlphaProxy.startLibThread()
