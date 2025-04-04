@@ -70,8 +70,8 @@ class LibCharlieProxyImpl(
 
     private fun loadGameWorld(): Boolean {
         val gameFileUri = gameState.gameFileUri
-        val gameFile = fromUri(context, gameState.gameFileUri)
-        val gameFileFullPath = documentWrap(gameFile!!).getAbsolutePath(context)
+        val gameFile = fromUri(context, gameState.gameFileUri) ?: return false
+        val gameFileFullPath = documentWrap(gameFile).getAbsolutePath(context)
         val gameData = getFileContents(context, gameFileUri) ?: return false
 
         if (!loadGameWorldFromData(gameData, gameFileFullPath)) {
