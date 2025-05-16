@@ -12,8 +12,8 @@ import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.child
 import com.libqsp.jni.QSPLib
 import org.qp.android.questopiabundle.GameInterface
-import org.qp.android.questopiabundle.dto.LibGenItem
 import org.qp.android.questopiabundle.dto.LibGameState
+import org.qp.android.questopiabundle.dto.LibGenItem
 import org.qp.android.questopiabundle.lib.LibIProxy
 import org.qp.android.questopiabundle.lib.LibRefIRequest
 import org.qp.android.questopiabundle.lib.LibTypeDialog
@@ -32,6 +32,7 @@ import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
 import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.Volatile
+import kotlin.concurrent.withLock
 import kotlin.contracts.ExperimentalContracts
 
 class LibAlphaProxyImpl(
@@ -51,20 +52,13 @@ class LibAlphaProxyImpl(
     private val currGameDir: DocumentFile?
         get() = fromUri(context, gameState.gameDirUri)
 
-    @Synchronized
     private fun runOnQspThread(runnable: Runnable) {
         if (!libThreadInit) {
             Log.w(TAG, "Lib thread has been started, but not initialized!")
             return
         }
-        val mLibHandler = libHandler
-        mLibHandler.post {
-            libLock.lock()
-            try {
-                runnable.run()
-            } finally {
-                libLock.unlock()
-            }
+        libHandler.post {
+            libLock.withLock { runnable.run() }
         }
     }
 
