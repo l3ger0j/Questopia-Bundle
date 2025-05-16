@@ -225,7 +225,6 @@ class QuestopiaBundle : Service(), GameInterface {
 
                 592 -> libAlphaProxy.stopLibThread()
             }
-            stopSelf()
         }
 
         @Throws(RemoteException::class)
