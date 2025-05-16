@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import androidx.core.os.HandlerCompat
 import androidx.documentfile.provider.DocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.child
@@ -35,8 +36,9 @@ import kotlin.contracts.ExperimentalContracts
 
 class LibAlphaProxyImpl(
     private val context: Context,
-    private var gameRequest: LibRefIRequest = LibRefIRequest(),
-    override var gameState: LibGameState = LibGameState()
+    override var gameInterface: GameInterface,
+    override var gameState: LibGameState = LibGameState(),
+    private var gameRequest: LibRefIRequest = LibRefIRequest()
 ) : QSPLib(), LibIProxy {
 
     private val TAG = javaClass.simpleName
@@ -46,7 +48,6 @@ class LibAlphaProxyImpl(
     @Volatile private var libThreadInit = false
     @Volatile private var gameStartTime: Long = 0L
     @Volatile private var lastMsCountCallTime: Long = 0L
-    private lateinit var gameInterface: GameInterface
     private val currGameDir: DocumentFile?
         get() = fromUri(context, gameState.gameDirUri)
 
@@ -187,7 +188,7 @@ class LibAlphaProxyImpl(
                     if (Looper.myLooper() == null) {
                         Looper.prepare()
                     }
-                    libHandler = Handler(Looper.myLooper()!!)
+                    libHandler = HandlerCompat.createAsync(Looper.myLooper()!!)
                     libThreadInit = true
                     Looper.loop()
                     terminate()
@@ -339,10 +340,6 @@ class LibAlphaProxyImpl(
                 showLastQspError()
             }
         }
-    }
-
-    override fun setGameInterface(inter: GameInterface) {
-        this.gameInterface = inter
     }
 
     override fun onRefreshInt(isForced: Boolean) {

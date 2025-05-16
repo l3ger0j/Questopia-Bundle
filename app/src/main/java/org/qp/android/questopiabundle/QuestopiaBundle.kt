@@ -3,13 +3,13 @@ package org.qp.android.questopiabundle
 import android.app.Service
 import android.content.Intent
 import android.net.Uri
-import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.RemoteException
 import android.util.Log
-import org.qp.android.questopiabundle.lib.LibGameRequest
+import androidx.core.os.HandlerCompat
 import org.qp.android.questopiabundle.dto.LibGameState
+import org.qp.android.questopiabundle.lib.LibGameRequest
 import org.qp.android.questopiabundle.lib.LibRefIRequest
 import org.qp.android.questopiabundle.lib.LibTypeDialog
 import org.qp.android.questopiabundle.lib.LibTypeWindow
@@ -19,12 +19,12 @@ import org.qp.android.questopiabundle.lib.impl.LibCharlieProxyImpl
 import kotlin.concurrent.Volatile
 
 class QuestopiaBundle : Service(), GameInterface {
-    private val counterHandler = Handler(Looper.myLooper() ?: Looper.getMainLooper())
-    private val counterNDKHandler = Handler(Looper.myLooper() ?: Looper.getMainLooper())
-    private val counterSNXHandler = Handler(Looper.myLooper() ?: Looper.getMainLooper())
-    private val libAlphaProxy: LibAlphaProxyImpl = LibAlphaProxyImpl(this@QuestopiaBundle)
-    private val libBravoProxy: LibBravoProxyImpl = LibBravoProxyImpl(this@QuestopiaBundle)
-    private val libCharlieProxy: LibCharlieProxyImpl = LibCharlieProxyImpl(this@QuestopiaBundle)
+    private val counterHandler = HandlerCompat.createAsync(Looper.myLooper() ?: Looper.getMainLooper())
+    private val counterNDKHandler = HandlerCompat.createAsync(Looper.myLooper() ?: Looper.getMainLooper())
+    private val counterSNXHandler = HandlerCompat.createAsync(Looper.myLooper() ?: Looper.getMainLooper())
+    private val libAlphaProxy: LibAlphaProxyImpl = LibAlphaProxyImpl(this@QuestopiaBundle, this)
+    private val libBravoProxy: LibBravoProxyImpl = LibBravoProxyImpl(this@QuestopiaBundle, this)
+    private val libCharlieProxy: LibCharlieProxyImpl = LibCharlieProxyImpl(this@QuestopiaBundle, this)
     private lateinit var callbacks: AsyncCallbacks
 
     @Volatile
@@ -200,22 +200,16 @@ class QuestopiaBundle : Service(), GameInterface {
             when (mLibVersion) {
                 570 -> {
                     counterNDKHandler.postDelayed(counterNDKTask, counterInterval.toLong())
-
-                    libBravoProxy.setGameInterface(this@QuestopiaBundle)
                     libBravoProxy.startLibThread()
                 }
 
                 575 -> {
                     counterSNXHandler.postDelayed(counterSNXTask, counterInterval.toLong())
-
-                    libCharlieProxy.setGameInterface(this@QuestopiaBundle)
                     libCharlieProxy.startLibThread()
                 }
 
                 592 -> {
                     counterHandler.postDelayed(counterTask, counterInterval.toLong())
-
-                    libAlphaProxy.setGameInterface(this@QuestopiaBundle)
                     libAlphaProxy.startLibThread()
                 }
             }

@@ -31,5 +31,5 @@ interface LibIProxy {
      */
     fun executeCounter()
     val gameState: LibGameState
-    fun setGameInterface(inter: GameInterface)
+    val gameInterface: GameInterface
 }
