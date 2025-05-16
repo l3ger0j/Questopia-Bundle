@@ -8,7 +8,6 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.RemoteException
 import android.util.Log
-import com.anggrayudi.storage.file.DocumentFileCompat.getAccessibleAbsolutePaths
 import org.qp.android.questopiabundle.lib.LibGameRequest
 import org.qp.android.questopiabundle.lib.LibGameState
 import org.qp.android.questopiabundle.lib.LibRefIRequest
@@ -26,7 +25,7 @@ class QuestopiaBundle : Service(), GameInterface {
     private val libAlphaProxy: LibAlphaProxyImpl = LibAlphaProxyImpl(this@QuestopiaBundle)
     private val libBravoProxy: LibBravoProxyImpl = LibBravoProxyImpl(this@QuestopiaBundle)
     private val libCharlieProxy: LibCharlieProxyImpl = LibCharlieProxyImpl(this@QuestopiaBundle)
-    private var callbacks: AsyncCallbacks? = null
+    private lateinit var callbacks: AsyncCallbacks
 
     @Volatile
     private var counterInterval = 500
@@ -54,7 +53,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
     override fun requestPermFile(pathUri: Uri) {
         try {
-            callbacks?.requestPermOnFile(pathUri)
+            callbacks.requestPermOnFile(pathUri)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
         }
@@ -62,7 +61,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
     override fun requestCreateFile(dirUri: Uri, path: String): Uri {
         try {
-            return callbacks?.requestCreateFile(dirUri, path) ?: Uri.EMPTY
+            return callbacks.requestCreateFile(dirUri, path) ?: Uri.EMPTY
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
             return Uri.EMPTY
@@ -71,7 +70,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
     override fun isPlayingFile(filePath: String): Boolean {
         try {
-            return callbacks?.isPlayingFile(filePath) ?: false
+            return callbacks.isPlayingFile(filePath)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
             return false
@@ -80,7 +79,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
     override fun closeAllFiles() {
         try {
-            callbacks?.closeAllFiles()
+            callbacks.closeAllFiles()
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
         }
@@ -88,7 +87,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
     override fun closeFile(filePath: String?) {
         try {
-            callbacks?.closeFile(filePath)
+            callbacks.closeFile(filePath)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
         }
@@ -96,7 +95,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
     override fun playFile(path: String?, volume: Int) {
         try {
-            callbacks?.playFile(path, volume)
+            callbacks.playFile(path, volume)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
         }
@@ -110,7 +109,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
     override fun doChangeCurrGameDir(newGameDirUri: Uri?) {
         try {
-            callbacks?.sendChangeCurrGameDir(newGameDirUri)
+            callbacks.sendChangeCurrGameDir(newGameDirUri)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
         }
@@ -141,7 +140,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
     override fun showLibDialog(dialog: LibTypeDialog?, inputString: String?): LibDialogRetValue? {
         try {
-            return callbacks?.doOnShowDialog(LibResult(dialog), inputString)
+            return callbacks.doOnShowDialog(LibResult(dialog), inputString)
         } catch (e: RemoteException) {
             Log.e("QuestopiaBundle", "Error", e)
             return LibDialogRetValue()
@@ -150,7 +149,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
     override fun changeVisWindow(type: LibTypeWindow?, show: Boolean) {
         try {
-            callbacks?.doChangeVisWindow(LibResult<LibTypeWindow?>(type), show)
+            callbacks.doChangeVisWindow(LibResult<LibTypeWindow?>(type), show)
         } catch (e: RemoteException) {
             Log.e("QuestopiaBundle", "Error", e)
         }
@@ -328,7 +327,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
         @Throws(RemoteException::class)
         override fun sendAsync(callbacks: AsyncCallbacks?) {
-            this@QuestopiaBundle.callbacks = callbacks
+            this@QuestopiaBundle.callbacks = callbacks ?: return
         }
     }
 
