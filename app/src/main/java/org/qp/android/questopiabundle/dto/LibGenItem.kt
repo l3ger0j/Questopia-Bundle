@@ -3,9 +3,9 @@ package org.qp.android.questopiabundle.dto
 import android.os.Parcel
 import android.os.Parcelable
 
-data class LibListItem(
+data class LibGenItem(
     val text: String = "",
-    val pathToImage: String = ""
+    val imagePath: String = ""
 ) : Parcelable {
 
     constructor(source: Parcel) : this(
@@ -17,15 +17,15 @@ data class LibListItem(
 
     override fun writeToParcel(dest: Parcel, flags: Int) {
         dest.writeString(text)
-        dest.writeString(pathToImage)
+        dest.writeString(imagePath)
     }
 
-    companion object CREATOR : Parcelable.Creator<LibListItem> {
-        override fun createFromParcel(source: Parcel): LibListItem {
-            return LibListItem(source)
+    companion object CREATOR : Parcelable.Creator<LibGenItem> {
+        override fun createFromParcel(source: Parcel): LibGenItem {
+            return LibGenItem(source)
         }
 
-        override fun newArray(size: Int): Array<LibListItem?> {
+        override fun newArray(size: Int): Array<LibGenItem?> {
             return arrayOfNulls(size)
         }
     }

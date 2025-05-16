@@ -9,7 +9,7 @@ import android.os.Looper
 import android.os.RemoteException
 import android.util.Log
 import org.qp.android.questopiabundle.lib.LibGameRequest
-import org.qp.android.questopiabundle.lib.LibGameState
+import org.qp.android.questopiabundle.dto.LibGameState
 import org.qp.android.questopiabundle.lib.LibRefIRequest
 import org.qp.android.questopiabundle.lib.LibTypeDialog
 import org.qp.android.questopiabundle.lib.LibTypeWindow

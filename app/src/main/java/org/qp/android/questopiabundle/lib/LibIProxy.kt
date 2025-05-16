@@ -2,6 +2,7 @@ package org.qp.android.questopiabundle.lib
 
 import android.net.Uri
 import org.qp.android.questopiabundle.GameInterface
+import org.qp.android.questopiabundle.dto.LibGameState
 
 interface LibIProxy {
     /**

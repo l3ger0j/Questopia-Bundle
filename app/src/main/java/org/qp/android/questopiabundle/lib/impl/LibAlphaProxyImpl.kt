@@ -11,8 +11,8 @@ import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.child
 import com.libqsp.jni.QSPLib
 import org.qp.android.questopiabundle.GameInterface
-import org.qp.android.questopiabundle.dto.LibListItem
-import org.qp.android.questopiabundle.lib.LibGameState
+import org.qp.android.questopiabundle.dto.LibGenItem
+import org.qp.android.questopiabundle.dto.LibGameState
 import org.qp.android.questopiabundle.lib.LibIProxy
 import org.qp.android.questopiabundle.lib.LibRefIRequest
 import org.qp.android.questopiabundle.lib.LibTypeDialog
@@ -123,10 +123,10 @@ class LibAlphaProxyImpl(
     }
 
     @OptIn(ExperimentalContracts::class)
-    private val actionsList: List<LibListItem>
+    private val actionsList: List<LibGenItem>
         get() {
             if (!isWritableDir(context, currGameDir)) return emptyList()
-            val actions = mutableListOf<LibListItem>()
+            val actions = mutableListOf<LibGenItem>()
             val gameDir = currGameDir
 
             for (element in getActions()) {
@@ -141,17 +141,17 @@ class LibAlphaProxyImpl(
                     }
                 }
 
-                actions.add(LibListItem(tempText, tempImagePath))
+                actions.add(LibGenItem(tempText, tempImagePath))
             }
 
             return actions
         }
 
     @OptIn(ExperimentalContracts::class)
-    private val objectsList: List<LibListItem>
+    private val objectsList: List<LibGenItem>
         get() {
             if (!isWritableDir(context, currGameDir)) return emptyList()
-            val objects = mutableListOf<LibListItem>()
+            val objects = mutableListOf<LibGenItem>()
             val gameDir = currGameDir
 
             for (element in getObjects()) {
@@ -173,7 +173,7 @@ class LibAlphaProxyImpl(
                     }
                 }
 
-                objects.add(LibListItem(tempText, tempImagePath))
+                objects.add(LibGenItem(tempText, tempImagePath))
             }
 
             return objects

@@ -11,9 +11,8 @@ import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.child
 import org.libndkqsp.jni.NDKLib
 import org.qp.android.questopiabundle.GameInterface
-import org.qp.android.questopiabundle.dto.LibListItem
-import org.qp.android.questopiabundle.dto.LibMenuItem
-import org.qp.android.questopiabundle.lib.LibGameState
+import org.qp.android.questopiabundle.dto.LibGenItem
+import org.qp.android.questopiabundle.dto.LibGameState
 import org.qp.android.questopiabundle.lib.LibIProxy
 import org.qp.android.questopiabundle.lib.LibRefIRequest
 import org.qp.android.questopiabundle.lib.LibTypeDialog
@@ -136,12 +135,12 @@ class LibBravoProxyImpl(
     }
 
     @OptIn(ExperimentalContracts::class)
-    private val actionsList: List<LibListItem>
+    private val actionsList: List<LibGenItem>
         get() {
             val gameDir = currGameDir
             if (!isWritableDir(context, gameDir)) return emptyList()
 
-            val actions = mutableListOf<LibListItem>()
+            val actions = mutableListOf<LibGenItem>()
 
             for (element in QSPGetActionData() ?: return emptyList()) {
                 val safeElement = element ?: continue
@@ -156,19 +155,19 @@ class LibBravoProxyImpl(
                     }
                 }
 
-                actions.add(LibListItem(tempText ?: "", tempImagePath ?: ""))
+                actions.add(LibGenItem(tempText ?: "", tempImagePath ?: ""))
             }
 
             return actions
         }
 
     @OptIn(ExperimentalContracts::class)
-    private val objectsList: List<LibListItem>
+    private val objectsList: List<LibGenItem>
         get() {
             val gameDir = currGameDir
             if (!isWritableDir(context, gameDir)) return emptyList()
 
-            val objects = mutableListOf<LibListItem>()
+            val objects = mutableListOf<LibGenItem>()
             for (element in QSPGetObjectData() ?: return emptyList()) {
                 val safeElement = element ?: continue
                 var tempImagePath = safeElement.image
@@ -189,7 +188,7 @@ class LibBravoProxyImpl(
                     }
                 }
 
-                objects.add(LibListItem(tempText ?: "", tempImagePath ?: ""))
+                objects.add(LibGenItem(tempText ?: "", tempImagePath ?: ""))
             }
 
             return objects
@@ -472,7 +471,7 @@ class LibBravoProxyImpl(
     }
 
     override fun AddMenuItem(name: String?, imgPath: String?) {
-        gameState = gameState.copy(menuItemsList = listOf(LibMenuItem(
+        gameState = gameState.copy(menuItemsList = listOf(LibGenItem(
             name ?: "",
             imgPath ?: ""
         )))

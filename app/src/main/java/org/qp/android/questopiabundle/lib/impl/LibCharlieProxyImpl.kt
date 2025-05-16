@@ -11,9 +11,8 @@ import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.child
 import org.libsnxqsp.jni.SNXLib
 import org.qp.android.questopiabundle.GameInterface
-import org.qp.android.questopiabundle.dto.LibListItem
-import org.qp.android.questopiabundle.dto.LibMenuItem
-import org.qp.android.questopiabundle.lib.LibGameState
+import org.qp.android.questopiabundle.dto.LibGenItem
+import org.qp.android.questopiabundle.dto.LibGameState
 import org.qp.android.questopiabundle.lib.LibIProxy
 import org.qp.android.questopiabundle.lib.LibRefIRequest
 import org.qp.android.questopiabundle.lib.LibTypeDialog
@@ -130,10 +129,10 @@ class LibCharlieProxyImpl(
     }
 
     @OptIn(ExperimentalContracts::class)
-    private val actionsList: List<LibListItem>
+    private val actionsList: List<LibGenItem>
         get() {
             if (!isWritableDir(context, currGameDir)) return emptyList()
-            val actions = mutableListOf<LibListItem>()
+            val actions = mutableListOf<LibGenItem>()
             val gameDir = currGameDir
 
             for (element in getActions()) {
@@ -148,19 +147,19 @@ class LibCharlieProxyImpl(
                     }
                 }
 
-                actions.add(LibListItem(tempText, tempImagePath))
+                actions.add(LibGenItem(tempText, tempImagePath))
             }
 
             return actions
         }
 
     @OptIn(ExperimentalContracts::class)
-    private val objectsList: List<LibListItem>
+    private val objectsList: List<LibGenItem>
         get() {
             val gameDir = currGameDir
             if (!isWritableDir(context, gameDir)) return emptyList()
 
-            val objects = mutableListOf<LibListItem>()
+            val objects = mutableListOf<LibGenItem>()
             for (element in getObjects()) {
                 var tempImagePath = element.image ?: ""
                 val tempText = element.text ?: ""
@@ -180,7 +179,7 @@ class LibCharlieProxyImpl(
                     }
                 }
 
-                objects.add(LibListItem(tempText, tempImagePath))
+                objects.add(LibGenItem(tempText, tempImagePath))
             }
 
             return objects
@@ -466,7 +465,7 @@ class LibCharlieProxyImpl(
     }
 
     override fun onAddMenuItem(name: String?, imgPath: String?) {
-        gameState = gameState.copy(menuItemsList = listOf(LibMenuItem(
+        gameState = gameState.copy(menuItemsList = listOf(LibGenItem(
             name ?: "",
             imgPath ?: ""
         )))

@@ -1,11 +1,8 @@
-package org.qp.android.questopiabundle.lib
+package org.qp.android.questopiabundle.dto
 
 import android.net.Uri
 import android.os.Parcel
 import android.os.Parcelable
-import org.qp.android.questopiabundle.dto.LibListItem
-import org.qp.android.questopiabundle.dto.LibMenuItem
-import org.qp.android.questopiabundle.lib.LibIConfig
 
 data class LibGameState(
     val interfaceConfig: LibIConfig = LibIConfig(),
@@ -16,9 +13,9 @@ data class LibGameState(
     val gameFileUri: Uri = Uri.EMPTY,
     val mainDesc: String = "",
     val varsDesc: String = "",
-    val actionsList: List<LibListItem> = listOf(),
-    val objectsList: List<LibListItem> = listOf(),
-    val menuItemsList: List<LibMenuItem> = listOf()
+    val actionsList: List<LibGenItem> = listOf(),
+    val objectsList: List<LibGenItem> = listOf(),
+    val menuItemsList: List<LibGenItem> = listOf()
 ) : Parcelable {
 
     constructor(source: Parcel) : this(
@@ -31,9 +28,9 @@ data class LibGameState(
         source.readString() ?: "",
         source.readString() ?: "",
     ) {
-        source.readTypedList(actionsList, LibListItem)
-        source.readTypedList(objectsList, LibListItem)
-        source.readTypedList(menuItemsList, LibMenuItem)
+        source.readTypedList(actionsList, LibGenItem)
+        source.readTypedList(objectsList, LibGenItem)
+        source.readTypedList(menuItemsList, LibGenItem)
     }
 
     override fun writeToParcel(dest: Parcel, flags: Int) {
