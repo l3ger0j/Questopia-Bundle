@@ -37,6 +37,7 @@ import kotlin.contracts.ExperimentalContracts
 
 class LibCharlieProxyImpl(
     private val context: Context,
+    private var gameRequest: LibRefIRequest = LibRefIRequest(),
     override var gameState: LibGameState = LibGameState()
 ) : SNXLib(), LibIProxy {
 
@@ -362,15 +363,18 @@ class LibCharlieProxyImpl(
 
         gameState = if (newState != gameState) newState else gameState
 
-        gameInterface.doRefresh(
-            LibRefIRequest(
-                isIConfigChanged = loadInterfaceConfiguration(),
-                isMainDescChanged = isMainDescChanged,
-                isVarsDescChanged = isVarsDescChanged,
-                isActionsChanged = isActionsChanged,
-                isObjectsChanged = isObjectsChanged
-            )
+        val newRequest = gameRequest.copy(
+            isIConfigChanged = loadInterfaceConfiguration(),
+            isMainDescChanged = isMainDescChanged,
+            isVarsDescChanged = isVarsDescChanged,
+            isActionsChanged = isActionsChanged,
+            isObjectsChanged = isObjectsChanged
         )
+
+        if (newRequest != gameRequest) {
+            gameRequest = newRequest
+            gameInterface.doUpdateState(newRequest)
+        }
     }
 
     @OptIn(ExperimentalContracts::class)

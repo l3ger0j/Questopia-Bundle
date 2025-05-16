@@ -13,7 +13,7 @@ interface GameInterface {
     fun closeFile(filePath: String?)
     fun playFile(path: String?, volume: Int)
     fun doChangeCurrGameDir(newGameDirUri: Uri?)
-    fun doRefresh(request: LibRefIRequest?)
+    fun doUpdateState(request: LibRefIRequest)
     fun showLibDialog(dialog: LibTypeDialog?, inputString: String?): LibDialogRetValue?
     fun changeVisWindow(type: LibTypeWindow?, show: Boolean)
     /**

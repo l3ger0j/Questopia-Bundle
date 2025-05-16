@@ -37,6 +37,7 @@ import kotlin.contracts.ExperimentalContracts
 
 class LibBravoProxyImpl(
     private val context: Context,
+    private var gameRequest: LibRefIRequest = LibRefIRequest(),
     override var gameState: LibGameState = LibGameState()
 ) : NDKLib(), LibIProxy {
 
@@ -129,6 +130,7 @@ class LibBravoProxyImpl(
                 gameState = gameState.copy(interfaceConfig = newConfig)
                 true
             }
+
             else -> false
         }
     }
@@ -372,15 +374,18 @@ class LibBravoProxyImpl(
 
         gameState = if (newState != gameState) newState else gameState
 
-        gameInterface.doRefresh(
-            LibRefIRequest(
-                isIConfigChanged = loadInterfaceConfiguration(),
-                isMainDescChanged = QSPIsMainDescChanged(),
-                isVarsDescChanged = QSPIsVarsDescChanged(),
-                isActionsChanged = QSPIsActionsChanged(),
-                isObjectsChanged = QSPIsObjectsChanged()
-            )
+        val newRequest = gameRequest.copy(
+            isIConfigChanged = loadInterfaceConfiguration(),
+            isMainDescChanged = QSPIsMainDescChanged(),
+            isVarsDescChanged = QSPIsVarsDescChanged(),
+            isActionsChanged = QSPIsActionsChanged(),
+            isObjectsChanged = QSPIsObjectsChanged()
         )
+
+        if (newRequest != gameRequest) {
+            gameRequest = newRequest
+            gameInterface.doUpdateState(newRequest)
+        }
     }
 
     @OptIn(ExperimentalContracts::class)

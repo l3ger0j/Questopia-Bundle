@@ -35,6 +35,7 @@ import kotlin.contracts.ExperimentalContracts
 
 class LibAlphaProxyImpl(
     private val context: Context,
+    private var gameRequest: LibRefIRequest = LibRefIRequest(),
     override var gameState: LibGameState = LibGameState()
 ) : QSPLib(), LibIProxy {
 
@@ -366,15 +367,18 @@ class LibAlphaProxyImpl(
             }
         }
 
-        gameInterface.doRefresh(
-            LibRefIRequest(
-                isIConfigChanged = loadInterfaceConfiguration(),
-                isMainDescChanged = isMainDescChanged,
-                isVarsDescChanged = isVarsDescChanged,
-                isActionsChanged = isActsChanged,
-                isObjectsChanged = isObjsChanged
-            )
+        val newRequest = gameRequest.copy(
+            isIConfigChanged = loadInterfaceConfiguration(),
+            isMainDescChanged = isMainDescChanged,
+            isVarsDescChanged = isVarsDescChanged,
+            isActionsChanged = isActsChanged,
+            isObjectsChanged = isObjsChanged
         )
+
+        if (newRequest != gameRequest) {
+            gameRequest = newRequest
+            gameInterface.doUpdateState(newRequest)
+        }
     }
 
     @OptIn(ExperimentalContracts::class)

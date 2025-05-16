@@ -115,22 +115,19 @@ class QuestopiaBundle : Service(), GameInterface {
         }
     }
 
-    override fun doRefresh(request: LibRefIRequest?) {
+    override fun doUpdateState(request: LibRefIRequest) {
         try {
             when (mLibVersion) {
                 570 -> {
-                    callbacks?.sendLibRef(LibResult<LibRefIRequest?>(request))
-                    callbacks?.sendLibGameState(LibResult<LibGameState?>(libBravoProxy.gameState))
+                    callbacks.updateState(LibResult<LibRefIRequest?>(request), LibResult<LibGameState?>(libBravoProxy.gameState))
                 }
 
                 575 -> {
-                    callbacks?.sendLibRef(LibResult<LibRefIRequest?>(request))
-                    callbacks?.sendLibGameState(LibResult<LibGameState?>(libCharlieProxy.gameState))
+                    callbacks.updateState(LibResult<LibRefIRequest?>(request), LibResult<LibGameState?>(libCharlieProxy.gameState))
                 }
 
                 592 -> {
-                    callbacks?.sendLibRef(LibResult<LibRefIRequest?>(request))
-                    callbacks?.sendLibGameState(LibResult<LibGameState?>(libAlphaProxy.gameState))
+                    callbacks.updateState(LibResult<LibRefIRequest?>(request), LibResult<LibGameState?>(libAlphaProxy.gameState))
                 }
             }
         } catch (e: Exception) {
