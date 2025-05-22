@@ -43,7 +43,6 @@ class LibBravoProxyImpl(
     private var gameRequest: LibRefIRequest = LibRefIRequest()
 ) : NDKLib(), LibIProxy {
 
-    private val TAG = javaClass.simpleName
     private val libLock = ReentrantLock()
     private lateinit var libThread: Thread
     @Volatile private lateinit var libHandler: Handler
@@ -54,12 +53,10 @@ class LibBravoProxyImpl(
         get() = fromUri(context, gameState.gameDirUri)
 
     private fun runOnQspThread(runnable: Runnable) {
-        if (!libThreadInit) {
-            Log.w(TAG, "Lib thread has been started, but not initialized!")
-            return
-        }
-        libHandler.post {
-            libLock.withLock { runnable.run() }
+        if (libThreadInit) {
+            libHandler.post {
+                libLock.withLock { runnable.run() }
+            }
         }
     }
 
@@ -75,10 +72,8 @@ class LibBravoProxyImpl(
 
         if (!QSPLoadGameWorldFromData(gameData, gameFileFullPath)) {
             showLastQspError()
-            Log.d("QSP", "World is not loaded!")
             return false
         }
-        Log.d("QSP", "World is loaded!")
         return true
     }
 
@@ -203,7 +198,6 @@ class LibBravoProxyImpl(
                     Looper.loop()
                     QSPDeInit()
                 } catch (t: Throwable) {
-                    Log.e(TAG, "lib thread has stopped exceptionally", t)
                     Thread.currentThread().interrupt()
                 }
             }
@@ -216,9 +210,8 @@ class LibBravoProxyImpl(
             val handler = libHandler
             handler.looper.quitSafely()
             libThreadInit = false
-        } else {
-            Log.w(TAG, "lib thread has been started, but not initialized")
         }
+
         libThread.interrupt()
     }
 
@@ -440,7 +433,6 @@ class LibBravoProxyImpl(
                 saveGameState(saveFileUri)
             } else {
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
-                Log.e(TAG, "Error access dir")
             }
         }
     }
@@ -483,7 +475,7 @@ class LibBravoProxyImpl(
         try {
             Thread.sleep(msecs.toLong())
         } catch (ex: InterruptedException) {
-            Log.e(TAG, "Wait failed", ex)
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, ex.toString())
         }
     }
 
@@ -509,7 +501,7 @@ class LibBravoProxyImpl(
 
         val newGameDir = fromFullPath(context, path.toString())
         if (newGameDir == null || !newGameDir.exists()) {
-            Log.e(TAG, "Game directory not found: $path")
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Game directory not found: $path")
             return
         }
         val currGameDirUri = currGameDir?.uri

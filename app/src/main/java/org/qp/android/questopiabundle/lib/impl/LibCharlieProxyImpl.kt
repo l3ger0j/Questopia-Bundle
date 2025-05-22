@@ -43,7 +43,6 @@ class LibCharlieProxyImpl(
     private var gameRequest: LibRefIRequest = LibRefIRequest()
 ) : SNXLib(), LibIProxy {
 
-    private val TAG = javaClass.simpleName
     private val libLock = ReentrantLock()
     private lateinit var libThread: Thread
     @Volatile private lateinit var libHandler: Handler
@@ -54,12 +53,10 @@ class LibCharlieProxyImpl(
         get() = fromUri(context, gameState.gameDirUri)
 
     private fun runOnQspThread(runnable: Runnable) {
-        if (!libThreadInit) {
-            Log.w(TAG, "Lib thread has been started, but not initialized!")
-            return
-        }
-        libHandler.post {
-            libLock.withLock { runnable.run() }
+        if (libThreadInit) {
+            libHandler.post {
+                libLock.withLock { runnable.run() }
+            }
         }
     }
 
@@ -194,7 +191,6 @@ class LibCharlieProxyImpl(
                     Looper.loop()
                     terminate()
                 } catch (t: Throwable) {
-                    Log.e(TAG, "lib thread has stopped exceptionally", t)
                     Thread.currentThread().interrupt()
                 }
             }
@@ -207,9 +203,8 @@ class LibCharlieProxyImpl(
             val handler = libHandler
             handler.looper.quitSafely()
             libThreadInit = false
-        } else {
-            Log.w(TAG, "lib thread has been started, but not initialized")
         }
+
         libThread.interrupt()
     }
 
@@ -414,11 +409,9 @@ class LibCharlieProxyImpl(
                     gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
                 } else {
                     gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
-                    Log.e(TAG, "Save file not found")
                 }
             } catch (e: Exception) {
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, e.toString())
-                Log.e(TAG, "Error: ", e)
             }
         }
     }
@@ -434,7 +427,6 @@ class LibCharlieProxyImpl(
                 saveGameState(saveFileUri)
             } else {
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
-                Log.e(TAG, "Error access dir")
             }
         }
     }
@@ -479,7 +471,7 @@ class LibCharlieProxyImpl(
         try {
             Thread.sleep(msecs.toLong())
         } catch (ex: InterruptedException) {
-            Log.e(TAG, "Wait failed", ex)
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, ex.toString())
         }
     }
 

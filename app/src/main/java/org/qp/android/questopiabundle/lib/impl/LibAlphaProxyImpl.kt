@@ -53,12 +53,10 @@ class LibAlphaProxyImpl(
         get() = fromUri(context, gameState.gameDirUri)
 
     private fun runOnQspThread(runnable: Runnable) {
-        if (!libThreadInit) {
-            Log.w(TAG, "Lib thread has been started, but not initialized!")
-            return
-        }
-        libHandler.post {
-            libLock.withLock { runnable.run() }
+        if (libThreadInit) {
+            libHandler.post {
+                libLock.withLock { runnable.run() }
+            }
         }
     }
 
@@ -187,7 +185,6 @@ class LibAlphaProxyImpl(
                     Looper.loop()
                     terminate()
                 } catch (t: Throwable) {
-                    Log.e(TAG, "lib thread has stopped exceptionally", t)
                     Thread.currentThread().interrupt()
                 }
             }
@@ -200,9 +197,8 @@ class LibAlphaProxyImpl(
             val handler = libHandler
             handler.looper.quitSafely()
             libThreadInit = false
-        } else {
-            Log.w(TAG, "lib thread has been started, but not initialized")
         }
+
         libThread.interrupt()
     }
 
@@ -417,11 +413,9 @@ class LibAlphaProxyImpl(
                     gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
                 } else {
                     gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
-                    Log.e(TAG, "Save file not found")
                 }
             } catch (e: Exception) {
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, e.toString())
-                Log.e(TAG, "Error: ", e)
             }
         }
     }
@@ -436,7 +430,6 @@ class LibAlphaProxyImpl(
                 saveGameState(saveFileUri)
             } else {
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
-                Log.e(TAG, "Error access dir")
             }
         }
     }
@@ -470,7 +463,7 @@ class LibAlphaProxyImpl(
         try {
             Thread.sleep(msecs.toLong())
         } catch (ex: InterruptedException) {
-            Log.e(TAG, "Wait failed", ex)
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, ex.toString())
         }
     }
 
@@ -482,7 +475,7 @@ class LibAlphaProxyImpl(
     override fun onOpenGame(file: String, isNewGame: Boolean) {
         val newGameDir = fromFullPath(context, file)
         if (newGameDir == null || !newGameDir.exists()) {
-            Log.e(TAG, "Game directory not found: $file")
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Game directory not found: $file")
             return
         }
         val currGameDir = currGameDir ?: return
