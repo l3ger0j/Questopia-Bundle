@@ -202,7 +202,6 @@ class LibCharlieProxyImpl(
         libThread.start()
     }
 
-    @Synchronized
     override fun stopLibThread() {
         if (libThreadInit) {
             val handler = libHandler

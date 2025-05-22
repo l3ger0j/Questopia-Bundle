@@ -211,7 +211,6 @@ class LibBravoProxyImpl(
         libThread.start()
     }
 
-    @Synchronized
     override fun stopLibThread() {
         if (libThreadInit) {
             val handler = libHandler
