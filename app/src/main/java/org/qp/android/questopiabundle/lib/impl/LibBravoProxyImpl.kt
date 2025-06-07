@@ -62,11 +62,7 @@ class LibBravoProxyImpl(
 
     private fun loadGameWorld(): Boolean {
         val gameFileUri = gameState.gameFileUri
-        val gameFile = fromUri(
-            context,
-            gameState.gameFileUri
-        )
-        if (gameFile == null) return false
+        val gameFile = fromUri(context, gameState.gameFileUri) ?: return false
         val gameFileFullPath = documentWrap(gameFile).getAbsolutePath(context)
         val gameData = getFileContents(context, gameFileUri) ?: return false
 
@@ -133,9 +129,9 @@ class LibBravoProxyImpl(
             val actions = mutableListOf<LibGenItem>()
 
             for (element in QSPGetActionData() ?: return emptyList()) {
-                val safeElement = element ?: continue
-                var tempImagePath = safeElement.image
-                val tempText = safeElement.text
+                if (element == null) continue
+                var tempImagePath = element.image ?: ""
+                val tempText = element.text ?: ""
 
                 if (isNotEmptyOrBlank(tempImagePath)) {
                     val tempPath = normalizeContentPath(getFilename(tempImagePath))
@@ -145,7 +141,7 @@ class LibBravoProxyImpl(
                     }
                 }
 
-                actions.add(LibGenItem(tempText ?: "", tempImagePath ?: ""))
+                actions.add(LibGenItem(tempText, tempImagePath))
             }
 
             return actions
@@ -159,9 +155,9 @@ class LibBravoProxyImpl(
 
             val objects = mutableListOf<LibGenItem>()
             for (element in QSPGetObjectData() ?: return emptyList()) {
-                val safeElement = element ?: continue
-                var tempImagePath = safeElement.image
-                val tempText = safeElement.text
+                if (element == null) continue
+                var tempImagePath = element.image ?: ""
+                val tempText = element.text ?: ""
 
                 if (tempText.contains("<img")) {
                     if (!isContainsHtmlTags(tempText)) {
@@ -178,7 +174,7 @@ class LibBravoProxyImpl(
                     }
                 }
 
-                objects.add(LibGenItem(tempText ?: "", tempImagePath ?: ""))
+                objects.add(LibGenItem(tempText, tempImagePath))
             }
 
             return objects

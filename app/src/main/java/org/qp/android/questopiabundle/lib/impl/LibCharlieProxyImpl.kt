@@ -128,6 +128,7 @@ class LibCharlieProxyImpl(
             val gameDir = currGameDir
 
             for (element in getActions()) {
+                if (element == null) continue
                 var tempImagePath = element.image ?: ""
                 val tempText = element.text ?: ""
 
@@ -153,6 +154,7 @@ class LibCharlieProxyImpl(
 
             val objects = mutableListOf<LibGenItem>()
             for (element in getObjects()) {
+                if (element == null) continue
                 var tempImagePath = element.image ?: ""
                 val tempText = element.text ?: ""
 

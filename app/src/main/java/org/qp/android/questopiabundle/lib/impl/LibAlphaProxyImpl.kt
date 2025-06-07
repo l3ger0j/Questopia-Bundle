@@ -123,6 +123,7 @@ class LibAlphaProxyImpl(
             val gameDir = currGameDir
 
             for (element in getActions()) {
+                if (element == null) continue
                 var tempImagePath = element.image
                 val tempText = element.name
 
@@ -148,8 +149,9 @@ class LibAlphaProxyImpl(
             val gameDir = currGameDir
 
             for (element in getObjects()) {
-                var tempImagePath = element.image
-                val tempText = element.name
+                if (element == null) continue
+                var tempImagePath = element.image ?: ""
+                val tempText = element.name ?: ""
 
                 if (tempText.contains("<img")) {
                     if (!isContainsHtmlTags(tempText)) {
