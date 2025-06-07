@@ -79,20 +79,4 @@ object FileUtil {
             Log.e("FileUtil", "Error reading file: $uriContent", ex)
         }
     }
-
-    fun fromRelPath(
-        context: Context,
-        path: String,
-        parentDir: DocumentFile,
-        requiresWriteAccess: Boolean
-    ): DocumentFile? {
-        return parentDir.child(context, path, requiresWriteAccess)
-    }
-
-    fun fromFullPath(
-        context: Context,
-        fullPath: String
-    ): DocumentFile? {
-        return DocumentFileCompat.fromFullPath(context, fullPath, requiresWriteAccess = true)
-    }
 }

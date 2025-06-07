@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.util.Log
 import androidx.core.os.HandlerCompat
 import androidx.documentfile.provider.DocumentFile
 import com.anggrayudi.storage.extension.toDocumentFile
@@ -19,7 +18,6 @@ import org.qp.android.questopiabundle.lib.LibIProxy
 import org.qp.android.questopiabundle.lib.LibRefIRequest
 import org.qp.android.questopiabundle.lib.LibTypeDialog
 import org.qp.android.questopiabundle.lib.LibTypeWindow
-import org.qp.android.questopiabundle.utils.FileUtil.fromFullPath
 import org.qp.android.questopiabundle.utils.FileUtil.getFileContents
 import org.qp.android.questopiabundle.utils.FileUtil.isWritableDir
 import org.qp.android.questopiabundle.utils.FileUtil.isWritableFile
