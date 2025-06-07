@@ -6,7 +6,7 @@ import org.qp.android.questopiabundle.lib.LibTypeDialog
 import org.qp.android.questopiabundle.lib.LibTypeWindow
 
 interface GameInterface {
-    fun requestPermFile(pathUri: Uri)
+    fun requestReceiveFile(filePath: String): Uri
     fun requestCreateFile(dirUri: Uri, path: String): Uri
     fun isPlayingFile(filePath: String): Boolean
     fun closeAllFiles()

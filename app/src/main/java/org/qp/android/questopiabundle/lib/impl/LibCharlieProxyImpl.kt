@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.os.HandlerCompat
 import androidx.documentfile.provider.DocumentFile
+import com.anggrayudi.storage.extension.toDocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.child
 import org.libsnxqsp.jni.SNXLib
@@ -260,7 +261,6 @@ class LibCharlieProxyImpl(
             return
         }
 
-        gameInterface.requestPermFile(uri)
         val gameData = getFileContents(context, uri) ?: return
         if (!openSavedGameFromData(gameData, true)) {
             showLastQspError()
@@ -273,7 +273,6 @@ class LibCharlieProxyImpl(
             return
         }
 
-        gameInterface.requestPermFile(uri)
         val gameData = saveGameAsData(false) ?: return
         writeFileContents(context, uri, gameData)
     }
@@ -405,8 +404,7 @@ class LibCharlieProxyImpl(
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
             try {
-                val saveFile = fromFullPath(context, filename) ?: return
-                gameInterface.requestPermFile(saveFile.uri)
+                val saveFile = gameInterface.requestReceiveFile(filename).toDocumentFile(context)
                 if (isWritableFile(context, saveFile)) {
                     gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
                 } else {

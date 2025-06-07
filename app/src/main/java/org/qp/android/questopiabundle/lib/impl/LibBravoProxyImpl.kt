@@ -8,10 +8,12 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.os.HandlerCompat
 import androidx.documentfile.provider.DocumentFile
+import com.anggrayudi.storage.extension.toDocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.child
 import org.libndkqsp.jni.NDKLib
 import org.qp.android.questopiabundle.GameInterface
+import org.qp.android.questopiabundle.dto.LibGameState
 import org.qp.android.questopiabundle.dto.LibGenItem
 import org.qp.android.questopiabundle.dto.LibGameState
 import org.qp.android.questopiabundle.lib.LibIProxy
@@ -261,7 +263,6 @@ class LibBravoProxyImpl(
             return
         }
 
-        gameInterface.requestPermFile(uri)
         val gameData = getFileContents(context, uri) ?: return
         if (!QSPOpenSavedGameFromData(gameData, gameData.size, true)) {
             showLastQspError()
@@ -275,7 +276,6 @@ class LibBravoProxyImpl(
         }
 
         val gameData = QSPSaveGameAsData(false) ?: return
-        gameInterface.requestPermFile(uri)
         writeFileContents(context, uri, gameData)
     }
 
@@ -406,8 +406,7 @@ class LibBravoProxyImpl(
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
             try {
-                val saveFile = fromFullPath(context, filename) ?: return
-                gameInterface.requestPermFile(saveFile.uri)
+                val saveFile = gameInterface.requestReceiveFile(filename).toDocumentFile(context)
                 if (isWritableFile(context, saveFile)) {
                     gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
                 } else {
@@ -484,9 +483,9 @@ class LibBravoProxyImpl(
     override fun GetFileContents(path: String?): ByteArray? {
         if (!isNotEmptyOrBlank(path)) return byteArrayOf()
 
-        val targetFile = fromFullPath(context, path.toString()) ?: return null
-        val targetFileUri = targetFile.uri
-        gameInterface.requestPermFile(targetFileUri)
+        val targetFile = gameInterface.requestReceiveFile(path).toDocumentFile(context)
+        val targetFileUri = targetFile?.uri ?: return null
+        if (targetFileUri == Uri.EMPTY) return null
 
         return getFileContents(context, targetFileUri)
     }
@@ -494,14 +493,12 @@ class LibBravoProxyImpl(
     @OptIn(ExperimentalContracts::class)
     override fun ChangeQuestPath(path: String?) {
         if (!isNotEmptyOrBlank(path)) return
-
-        val newGameDir = fromFullPath(context, path.toString())
-        if (newGameDir == null || !newGameDir.exists()) {
+        val currGameDirUri = currGameDir?.uri ?: return
+        val newGameDirUri = gameInterface.requestReceiveFile(path)
+        if (newGameDirUri == Uri.EMPTY) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Game directory not found: $path")
             return
         }
-        val currGameDirUri = currGameDir?.uri
-        val newGameDirUri = newGameDir.uri
         if (currGameDirUri != newGameDirUri) {
             gameState = gameState.copy(gameDirUri = newGameDirUri)
             gameInterface.doChangeCurrGameDir(newGameDirUri)

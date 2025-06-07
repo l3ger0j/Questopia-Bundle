@@ -51,11 +51,12 @@ class QuestopiaBundle : Service(), GameInterface {
     @Volatile
     private var mLibVersion = 0
 
-    override fun requestPermFile(pathUri: Uri) {
+    override fun requestReceiveFile(filePath: String): Uri {
         try {
-            callbacks.requestPermOnFile(pathUri)
+            return callbacks.requestReceiveFile(filePath)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
+            return Uri.EMPTY
         }
     }
 

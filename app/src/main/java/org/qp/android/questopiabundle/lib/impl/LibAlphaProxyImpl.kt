@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.os.HandlerCompat
 import androidx.documentfile.provider.DocumentFile
+import com.anggrayudi.storage.extension.toDocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.child
 import com.libqsp.jni.QSPLib
@@ -42,7 +43,6 @@ class LibAlphaProxyImpl(
     private var gameRequest: LibRefIRequest = LibRefIRequest()
 ) : QSPLib(), LibIProxy {
 
-    private val TAG = javaClass.simpleName
     private val libLock = ReentrantLock()
     private lateinit var libThread: Thread
     @Volatile private lateinit var libHandler: Handler
@@ -254,7 +254,6 @@ class LibAlphaProxyImpl(
             return
         }
 
-        gameInterface.requestPermFile(uri)
         val gameData = getFileContents(context, uri) ?: return
         if (!openSavedGameFromData(gameData, true)) {
             showLastQspError()
@@ -267,7 +266,6 @@ class LibAlphaProxyImpl(
             return
         }
 
-        gameInterface.requestPermFile(uri)
         val gameData = saveGameAsData(false) ?: return
         writeFileContents(context, uri, gameData)
     }
@@ -409,8 +407,7 @@ class LibAlphaProxyImpl(
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
             try {
-                val saveFile = fromFullPath(context, file) ?: return
-                gameInterface.requestPermFile(saveFile.uri)
+                val saveFile = gameInterface.requestReceiveFile(file).toDocumentFile(context)
                 if (isWritableFile(context, saveFile)) {
                     gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
                 } else {
@@ -474,15 +471,15 @@ class LibAlphaProxyImpl(
         gameInterface.changeVisWindow(windowType, toShow)
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onOpenGame(file: String, isNewGame: Boolean) {
-        val newGameDir = fromFullPath(context, file)
-        if (newGameDir == null || !newGameDir.exists()) {
+        if (!isNotEmptyOrBlank(file)) return
+        val currGameDirUri = currGameDir?.uri ?: return
+        val newGameDirUri = gameInterface.requestReceiveFile(file)
+        if (newGameDirUri == Uri.EMPTY) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Game directory not found: $file")
             return
         }
-        val currGameDir = currGameDir ?: return
-        val currGameDirUri = currGameDir.uri
-        val newGameDirUri = newGameDir.uri
         if (currGameDirUri != newGameDirUri) {
             gameState = gameState.copy(gameDirUri = newGameDirUri)
             gameInterface.doChangeCurrGameDir(newGameDirUri)
