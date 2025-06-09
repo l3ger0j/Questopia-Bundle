@@ -121,10 +121,10 @@ JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetVarsDesc
 
 /*
  * Class:     org_libsnxqsp_jni_SNXLib
- * Method:    QSPIsVarsDescChanged
+ * Method:    isVarsDescChanged
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPIsVarsDescChanged
+JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_isVarsDescChanged
   (JNIEnv *, jobject);
 
 /*

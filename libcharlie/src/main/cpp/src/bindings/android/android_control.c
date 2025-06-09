@@ -46,11 +46,6 @@ jclass snxErrorInfoClass;
 jclass snxVarValResp;
 
 /* ------------------------------------------------------------ */
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPIsInCallBack(JNIEnv *env, jobject this)
-{
-	return qspIsInCallBack;
-}
-/* ------------------------------------------------------------ */
 /* Debugging */
 
 /* Managing the debugging mode */
@@ -85,13 +80,13 @@ JNIEXPORT jobject JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetCurStateData(JNIEn
 /* Version */
 JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetVersion(JNIEnv *env, jobject this)
 {
-	return QSP_VER;
+	return snxToJavaString(env, QSP_VER);
 }
 
 /* Date and time of compilation */
 JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetCompiledDateTime(JNIEnv *env, jobject this)
 {
-	return QSP_FMT(__DATE__) QSP_FMT(", ") QSP_FMT(__TIME__);
+	return snxToJavaString(env, QSP_FMT(__DATE__) QSP_FMT(", ") QSP_FMT(__TIME__));
 }
 /* ------------------------------------------------------------ */
 /* Number of full location updates */
@@ -121,7 +116,7 @@ JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_getMainDesc(JNIEnv *env,
 }
 
 /* The ability to change the text of the main description */
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPIsMainDescChanged(JNIEnv *env, jobject this)
+JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_isMainDescChanged(JNIEnv *env, jobject this)
 {
 	return qspIsMainDescChanged;
 }
@@ -129,13 +124,13 @@ JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPIsMainDescChanged(JN
 /* Additional description of the location */
 
 /* Text of the additional location description window */
-JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetVarsDesc(JNIEnv *env, jobject this)
+JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_getVarsDesc(JNIEnv *env, jobject this)
 {
 	return snxToJavaString(env, qspCurVars);
 }
 
 /* Possibility to change the text of the additional description */
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPIsVarsDescChanged(JNIEnv *env, jobject this)
+JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_isVarsDescChanged(JNIEnv *env, jobject this)
 {
 	return qspIsVarsDescChanged;
 }
@@ -168,25 +163,13 @@ JNIEXPORT jobject JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetExprValue(JNIEnv *
 }
 /* ------------------------------------------------------------ */
 /* Text of the input line */
-JNIEXPORT void JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPSetInputStrText(JNIEnv *env, jobject this, jstring val)
+JNIEXPORT void JNICALL Java_org_libsnxqsp_jni_SNXLib_setInputStrText(JNIEnv *env, jobject this, jstring val)
 {
-	const char *str = (*env)->GetStringUTFChars(env, val, NULL);
-	if (str == NULL)
-		return;
-	QSP_CHAR *strConverted = qspC2W(str);
-
+	QSP_CHAR *strConverted = snxFromJavaString(env, val);
 	qspCurInputLen = qspAddText(&strConverted, (QSP_CHAR *)val, 0, -1, QSP_FALSE);
-
-	(*env)->ReleaseStringUTFChars(env, val, str);
 }
 /* ------------------------------------------------------------ */
 /* List of actions */
-
-/* Number of actions */
-JNIEXPORT jint JNICALL Java_org_libsnxqsp_jni_SNXLib_getActionsCount(JNIEnv *env, jobject this)
-{
-	return qspCurActionsCount;
-}
 
 /* Data actions with the specified index */
 JNIEXPORT jobjectArray JNICALL Java_org_libsnxqsp_jni_SNXLib_getActions(JNIEnv *env, jobject this)
@@ -246,12 +229,6 @@ JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_isActionsChanged(JNIEnv
 }
 /* ------------------------------------------------------------ */
 /* List of objects */
-
-/* Number of objects */
-JNIEXPORT jint JNICALL Java_org_libsnxqsp_jni_SNXLib_getObjectsCount(JNIEnv *env, jobject this)
-{
-	return qspCurObjectsCount;
-}
 
 /* Object data with the specified index */
 JNIEXPORT jobjectArray JNICALL Java_org_libsnxqsp_jni_SNXLib_getObjects(JNIEnv *env, jobject this)
@@ -340,17 +317,14 @@ QSP_BOOL QSPGetVarValues(const QSP_CHAR *name, int ind, int *numVal, QSP_CHAR **
 	return JNI_TRUE;
 }
 
-JNIEXPORT jobject JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetVarValues(JNIEnv *env, jobject this, jstring name, jint ind)
+JNIEXPORT jobject JNICALL Java_org_libsnxqsp_jni_SNXLib_getVarValues(JNIEnv *env, jobject this, jstring name, jint ind)
 {
 	//Convert array name to QSP string
-	const char *str = (*env)->GetStringUTFChars(env, name, NULL);
-	if (str == NULL)
-		return NULL;
-	QSP_CHAR *strConverted = qspC2W(str);
+	QSP_CHAR *strConverted = snxFromJavaString(env, name);
 
 	//Call QSP function
 	int numVal = 0;
-	char *strVal;
+	QSP_CHAR *strVal;
 	QSP_BOOL result = QSPGetVarValues(strConverted, (int)ind, &numVal, &strVal);
 
 	// If this class does not exist then return null.
@@ -382,7 +356,6 @@ JNIEXPORT jobject JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPGetVarValues(JNIEnv *
 		(*env)->SetBooleanField(env, obj, successFid, JNI_FALSE);
 	}
 
-	(*env)->ReleaseStringUTFChars(env, name, str);
 	return obj;
 }
 
@@ -519,63 +492,8 @@ JNIEXPORT jstring JNICALL Java_org_libsnxqsp_jni_SNXLib_getErrorDesc(JNIEnv *env
 /* ------------------------------------------------------------ */
 /* Game Management */
 
-/* Working with files */
-
-/* Downloading a new game from a file */
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPLoadGameWorld(JNIEnv *env, jobject this, jstring fileName)
-{
-	const char *str = (*env)->GetStringUTFChars(env, fileName, NULL);
-	if (str == NULL)
-		return JNI_FALSE;
-
-	if (qspIsExitOnError && qspErrorNum) return QSP_FALSE;
-	qspResetError();
-	if (qspIsDisableCodeExec) return QSP_FALSE;
-	qspOpenQuest((QSP_CHAR *)str, QSP_FALSE);
-	if (qspErrorNum) return QSP_FALSE;
-
-	(*env)->ReleaseStringUTFChars(env, fileName, str);
-	return QSP_TRUE;
-}
-
-/* Saving the state to a file */
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPSaveGame(JNIEnv *env, jobject this, jstring fileName, jboolean isRefresh)
-{
-	const char *str = (*env)->GetStringUTFChars(env, fileName, NULL);
-	if (str == NULL)
-		return JNI_FALSE;
-
-	if (qspIsExitOnError && qspErrorNum) return QSP_FALSE;
-	qspPrepareExecution();
-	if (qspIsDisableCodeExec) return QSP_FALSE;
-	qspSaveGameStatus((QSP_CHAR*)str);
-	if (qspErrorNum) return QSP_FALSE;
-	if ((QSP_BOOL)isRefresh) qspCallRefreshInt(QSP_FALSE);
-
-	(*env)->ReleaseStringUTFChars(env, fileName, str);
-	return QSP_TRUE;
-}
-
-/* Loading status from a file */
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPOpenSavedGame(JNIEnv *env, jobject this, jstring fileName, jboolean isRefresh)
-{
-	const char *str = (*env)->GetStringUTFChars(env, fileName, NULL);
-	if (str == NULL)
-		return JNI_FALSE;
-
-	if (qspIsExitOnError && qspErrorNum) return QSP_FALSE;
-	qspPrepareExecution();
-	if (qspIsDisableCodeExec) return QSP_FALSE;
-	qspOpenGameStatus((QSP_CHAR*)str);
-	if (qspErrorNum) return QSP_FALSE;
-	if ((QSP_BOOL)isRefresh) qspCallRefreshInt(QSP_FALSE);
-
-	(*env)->ReleaseStringUTFChars(env, fileName, str);
-	return QSP_TRUE;
-}
-
 /* Working with memory */
-//
+
 /* Loading a new game from memory */
 QSP_BOOL QSPLoadGameWorldFromData(const char *data, int dataSize, const QSP_CHAR *fileName)
 {
@@ -591,9 +509,10 @@ QSP_BOOL QSPLoadGameWorldFromData(const char *data, int dataSize, const QSP_CHAR
 	if (qspErrorNum) return QSP_FALSE;
 	return QSP_TRUE;
 }
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_loadGameWorldFromData(JNIEnv *env, jobject this, jbyteArray data, jint dataSize, jstring fileName)
+JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_loadGameWorldFromData(JNIEnv *env, jobject this, jbyteArray data, jstring fileName)
 {
 	//converting data
+	jint dataSize = (*env)->GetArrayLength(env, data);
 	jbyte *jbuf = malloc(dataSize * sizeof(jbyte));
 	if (jbuf == NULL)
 		return JNI_FALSE;
@@ -650,7 +569,7 @@ QSP_BOOL QSPSaveGameAsData(void **buf, int *realSize, QSP_BOOL isRefresh)
 	if (isRefresh) qspCallRefreshInt(QSP_FALSE);
 	return QSP_TRUE;
 }
-JNIEXPORT jbyteArray JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPSaveGameAsData(JNIEnv *env, jobject this, jboolean isRefresh)
+JNIEXPORT jbyteArray JNICALL Java_org_libsnxqsp_jni_SNXLib_saveGameAsData(JNIEnv *env, jobject this, jboolean isRefresh)
 {
 	void *buffer = NULL;
 	int bufferSize = 0;
@@ -685,9 +604,10 @@ QSP_BOOL QSPOpenSavedGameFromData(const void *data, int dataSize, QSP_BOOL isRef
 	if (isRefresh) qspCallRefreshInt(QSP_FALSE);
 	return QSP_TRUE;
 }
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPOpenSavedGameFromData(JNIEnv *env, jobject this, jbyteArray data, jint dataSize, jboolean isRefresh)
+JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_openSavedGameFromData(JNIEnv *env, jobject this, jbyteArray data, jboolean isRefresh)
 {
 	//converting data
+	jint dataSize = (*env)->GetArrayLength(env, data);
 	jbyte *jbuf = malloc(dataSize * sizeof(jbyte));
 	if (jbuf == NULL)
 		return JNI_FALSE;
@@ -715,7 +635,7 @@ QSP_BOOL QSPOpenSavedGameFromString(const QSP_CHAR* str, QSP_BOOL isRefresh)
 }
 
 /* Restarting the game */
-JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_QSPRestartGame(JNIEnv *env, jobject this, jboolean isRefresh)
+JNIEXPORT jboolean JNICALL Java_org_libsnxqsp_jni_SNXLib_restartGame(JNIEnv *env, jobject this, jboolean isRefresh)
 {
 	if (qspIsExitOnError && qspErrorNum) return JNI_FALSE;
 	qspPrepareExecution();
@@ -753,25 +673,25 @@ JNIEXPORT void JNICALL Java_org_libsnxqsp_jni_SNXLib_init(JNIEnv *env, jobject t
 	snxVarValResp = (jclass)(*env)->NewGlobalRef(env, clazz);
 
 	/* Get references to callbacks */
-	qspSetCallBack(QSP_CALL_DEBUG, (*env)->GetMethodID(env, snxApiClass, "CallDebug", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_ISPLAYINGFILE, (*env)->GetMethodID(env, snxApiClass, "IsPlayingFile", "(Ljava/lang/String;)Z"));
-	qspSetCallBack(QSP_CALL_PLAYFILE, (*env)->GetMethodID(env, snxApiClass, "PlayFile", "(Ljava/lang/String;I)V"));
-	qspSetCallBack(QSP_CALL_CLOSEFILE, (*env)->GetMethodID(env, snxApiClass, "CloseFile", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_SHOWIMAGE, (*env)->GetMethodID(env, snxApiClass, "ShowPicture", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_SHOWWINDOW, (*env)->GetMethodID(env, snxApiClass, "ShowWindow", "(IZ)V"));
-	qspSetCallBack(QSP_CALL_SHOWMENU, (*env)->GetMethodID(env, snxApiClass, "showMenu", "()I"));
-	qspSetCallBack(QSP_CALL_SHOWMSGSTR, (*env)->GetMethodID(env, snxApiClass, "ShowMessage", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_REFRESHINT, (*env)->GetMethodID(env, snxApiClass, "RefreshInt", "()V"));
-	qspSetCallBack(QSP_CALL_SETTIMER, (*env)->GetMethodID(env, snxApiClass, "SetTimer", "(I)V"));
+	qspSetCallBack(QSP_CALL_DEBUG, (*env)->GetMethodID(env, snxApiClass, "onDebug", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_ISPLAYINGFILE, (*env)->GetMethodID(env, snxApiClass, "onIsPlayingFile", "(Ljava/lang/String;)Z"));
+	qspSetCallBack(QSP_CALL_PLAYFILE, (*env)->GetMethodID(env, snxApiClass, "onPlayFile", "(Ljava/lang/String;I)V"));
+	qspSetCallBack(QSP_CALL_CLOSEFILE, (*env)->GetMethodID(env, snxApiClass, "onCloseFile", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_SHOWIMAGE, (*env)->GetMethodID(env, snxApiClass, "onShowImage", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_SHOWWINDOW, (*env)->GetMethodID(env, snxApiClass, "onShowWindow", "(IZ)V"));
+	qspSetCallBack(QSP_CALL_SHOWMENU, (*env)->GetMethodID(env, snxApiClass, "onShowMenu", "()I"));
+	qspSetCallBack(QSP_CALL_SHOWMSGSTR, (*env)->GetMethodID(env, snxApiClass, "onShowMessage", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_REFRESHINT, (*env)->GetMethodID(env, snxApiClass, "onRefreshInt", "()V"));
+	qspSetCallBack(QSP_CALL_SETTIMER, (*env)->GetMethodID(env, snxApiClass, "onSetTimer", "(I)V"));
 	qspSetCallBack(QSP_CALL_SYSTEM, (*env)->GetMethodID(env, snxApiClass, "onSystem", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_SETINPUTSTRTEXT, (*env)->GetMethodID(env, snxApiClass, "setInputStrText", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_DELETEMENU, (*env)->GetMethodID(env, snxApiClass, "deleteMenu", "()V"));
-	qspSetCallBack(QSP_CALL_OPENGAMESTATUS, (*env)->GetMethodID(env, snxApiClass, "OpenGame", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_SAVEGAMESTATUS, (*env)->GetMethodID(env, snxApiClass, "SaveGame", "(Ljava/lang/String;)V"));
-	qspSetCallBack(QSP_CALL_SLEEP, (*env)->GetMethodID(env, snxApiClass, "Wait", "(I)V"));
-	qspSetCallBack(QSP_CALL_GETMSCOUNT, (*env)->GetMethodID(env, snxApiClass, "GetMSCount", "()I"));
-	qspSetCallBack(QSP_CALL_INPUTBOX, (*env)->GetMethodID(env, snxApiClass, "InputBox", "(Ljava/lang/String;)Ljava/lang/String;"));
-	qspSetCallBack(QSP_CALL_ADDMENUITEM, (*env)->GetMethodID(env, snxApiClass, "addMenuItem", "(Ljava/lang/String;Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_SETINPUTSTRTEXT, (*env)->GetMethodID(env, snxApiClass, "onSetInputStrText", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_DELETEMENU, (*env)->GetMethodID(env, snxApiClass, "onDeleteMenu", "()V"));
+	qspSetCallBack(QSP_CALL_OPENGAMESTATUS, (*env)->GetMethodID(env, snxApiClass, "onOpenGame", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_SAVEGAMESTATUS, (*env)->GetMethodID(env, snxApiClass, "onSaveGame", "(Ljava/lang/String;)V"));
+	qspSetCallBack(QSP_CALL_SLEEP, (*env)->GetMethodID(env, snxApiClass, "onSleep", "(I)V"));
+	qspSetCallBack(QSP_CALL_GETMSCOUNT, (*env)->GetMethodID(env, snxApiClass, "onGetMsCount", "()I"));
+	qspSetCallBack(QSP_CALL_INPUTBOX, (*env)->GetMethodID(env, snxApiClass, "onInputBox", "(Ljava/lang/String;)Ljava/lang/String;"));
+	qspSetCallBack(QSP_CALL_ADDMENUITEM, (*env)->GetMethodID(env, snxApiClass, "onAddMenuItem", "(Ljava/lang/String;Ljava/lang/String;)V"));
 }
 
 /* Deinitialization */

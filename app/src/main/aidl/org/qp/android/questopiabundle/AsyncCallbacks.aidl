@@ -1,12 +1,12 @@
 package org.qp.android.questopiabundle;
 
+import android.net.Uri;
 import org.qp.android.questopiabundle.LibResult;
 import org.qp.android.questopiabundle.LibException;
 import org.qp.android.questopiabundle.LibDialogRetValue;
 
 interface AsyncCallbacks {
-    void sendLibGameState(in LibResult libResult);
-    void sendLibRef(in LibResult libResult);
+    void updateState(in LibResult refReq, in LibResult newState);
     void sendChangeCurrGameDir(in Uri gameDirUri);
 
     LibDialogRetValue doOnShowDialog(in LibResult typeDialog, String inputString);
@@ -16,6 +16,9 @@ interface AsyncCallbacks {
     void closeAllFiles();
     void closeFile(String filePath);
     void playFile(String path, int volume);
+
+    Uri requestReceiveFile(in String filePath);
+    Uri requestCreateFile(in Uri fileUri, String path);
 
     void onError(in LibException libException);
 }
