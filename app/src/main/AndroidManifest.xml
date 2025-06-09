@@ -2,7 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <queries android:exported="false">
+        <package android:name="com.google.android.documentsui" />
+        <package android:name="com.google.android.apps.docs" />
+        <package android:name="com.android.microdroid.empty_payload" />
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -16,12 +22,14 @@
 
         <service
             android:name=".QuestopiaBundle"
-            android:process=":remote"
-            android:exported="true">
+            android:exported="true"
+            android:permission="android.permission.INTERNET"
+            android:process=":remote">
             <intent-filter>
-                <action android:name="org.qp.intent.action.PICK_PLUGIN"/>
+                <action android:name="org.qp.intent.action.PICK_PLUGIN" />
                 <action android:name="org.qp.android.plugin.ENGINE_PLUGIN" />
-                <category android:name="org.qp.intent.category.ADD_PLUGIN"/>
+
+                <category android:name="org.qp.intent.category.ADD_PLUGIN" />
             </intent-filter>
         </service>
 
