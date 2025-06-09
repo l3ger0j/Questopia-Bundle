@@ -27,29 +27,27 @@ class QuestopiaBundle : Service(), GameInterface {
     private val libCharlieProxy: LibCharlieProxyImpl = LibCharlieProxyImpl(this@QuestopiaBundle, this)
     private lateinit var callbacks: AsyncCallbacks
 
-    @Volatile
-    private var counterInterval = 500
+    @Volatile private var counterInterval = 500L
     private val counterTask: Runnable = object : Runnable {
         override fun run() {
             libAlphaProxy.executeCounter()
-            counterHandler.postDelayed(this, counterInterval.toLong())
+            counterHandler.postDelayed(this, counterInterval)
         }
     }
     private val counterNDKTask: Runnable = object : Runnable {
         override fun run() {
             libBravoProxy.executeCounter()
-            counterNDKHandler.postDelayed(this, counterInterval.toLong())
+            counterNDKHandler.postDelayed(this, counterInterval)
         }
     }
     private val counterSNXTask: Runnable = object : Runnable {
         override fun run() {
             libCharlieProxy.executeCounter()
-            counterSNXHandler.postDelayed(this, counterInterval.toLong())
+            counterSNXHandler.postDelayed(this, counterInterval)
         }
     }
 
-    @Volatile
-    private var mLibVersion = 0
+    @Volatile private var mLibVersion = 570
 
     override fun requestReceiveFile(filePath: String): Uri {
         try {
@@ -154,7 +152,7 @@ class QuestopiaBundle : Service(), GameInterface {
     }
 
     override fun setCountInter(delayMillis: Int) {
-        counterInterval = delayMillis
+        counterInterval = delayMillis.toLong()
     }
 
     override fun doWithCounterDisabled(runnable: Runnable?) {
@@ -162,19 +160,19 @@ class QuestopiaBundle : Service(), GameInterface {
             570 -> {
                 counterNDKHandler.removeCallbacks(counterNDKTask)
                 runnable?.run()
-                counterNDKHandler.postDelayed(counterNDKTask, counterInterval.toLong())
+                counterNDKHandler.postDelayed(counterNDKTask, counterInterval)
             }
 
             575 -> {
                 counterSNXHandler.removeCallbacks(counterSNXTask)
                 runnable?.run()
-                counterSNXHandler.postDelayed(counterSNXTask, counterInterval.toLong())
+                counterSNXHandler.postDelayed(counterSNXTask, counterInterval)
             }
 
             592 -> {
                 counterHandler.removeCallbacks(counterTask)
                 runnable?.run()
-                counterHandler.postDelayed(counterTask, counterInterval.toLong())
+                counterHandler.postDelayed(counterTask, counterInterval)
             }
         }
     }
@@ -200,17 +198,17 @@ class QuestopiaBundle : Service(), GameInterface {
             mLibVersion = libVer
             when (mLibVersion) {
                 570 -> {
-                    counterNDKHandler.postDelayed(counterNDKTask, counterInterval.toLong())
+                    counterNDKHandler.postDelayed(counterNDKTask, counterInterval)
                     libBravoProxy.startLibThread()
                 }
 
                 575 -> {
-                    counterSNXHandler.postDelayed(counterSNXTask, counterInterval.toLong())
+                    counterSNXHandler.postDelayed(counterSNXTask, counterInterval)
                     libCharlieProxy.startLibThread()
                 }
 
                 592 -> {
-                    counterHandler.postDelayed(counterTask, counterInterval.toLong())
+                    counterHandler.postDelayed(counterTask, counterInterval)
                     libAlphaProxy.startLibThread()
                 }
             }
