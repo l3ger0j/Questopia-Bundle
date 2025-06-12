@@ -50,6 +50,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
 
+    implementation(libs.coroutines)
+
     implementation(libs.storage)
     implementation(libs.jsoup)
 

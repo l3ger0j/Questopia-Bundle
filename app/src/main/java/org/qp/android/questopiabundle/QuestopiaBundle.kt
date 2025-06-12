@@ -4,10 +4,14 @@ import android.app.Service
 import android.content.Intent
 import android.net.Uri
 import android.os.IBinder
-import android.os.Looper
 import android.os.RemoteException
 import android.util.Log
-import androidx.core.os.HandlerCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.qp.android.questopiabundle.dto.LibGameState
 import org.qp.android.questopiabundle.lib.LibGameRequest
 import org.qp.android.questopiabundle.lib.LibRefIRequest
@@ -19,31 +23,32 @@ import org.qp.android.questopiabundle.lib.impl.LibCharlieProxyImpl
 import kotlin.concurrent.Volatile
 
 class QuestopiaBundle : Service(), GameInterface {
-    private val counterHandler = HandlerCompat.createAsync(Looper.myLooper() ?: Looper.getMainLooper())
-    private val counterNDKHandler = HandlerCompat.createAsync(Looper.myLooper() ?: Looper.getMainLooper())
-    private val counterSNXHandler = HandlerCompat.createAsync(Looper.myLooper() ?: Looper.getMainLooper())
+    private lateinit var counterMainJob: Job
+    private lateinit var counterNDKJob: Job
+    private lateinit var counterSNXJob: Job
+    private val libHandlerScope = CoroutineScope(Dispatchers.Default)
     private val libAlphaProxy: LibAlphaProxyImpl = LibAlphaProxyImpl(this@QuestopiaBundle, this)
     private val libBravoProxy: LibBravoProxyImpl = LibBravoProxyImpl(this@QuestopiaBundle, this)
     private val libCharlieProxy: LibCharlieProxyImpl = LibCharlieProxyImpl(this@QuestopiaBundle, this)
     private lateinit var callbacks: AsyncCallbacks
 
     @Volatile private var counterInterval = 500L
-    private val counterTask: Runnable = object : Runnable {
-        override fun run() {
+    private val counterMainTask: suspend CoroutineScope.() -> Unit = {
+        while (isActive) {
             libAlphaProxy.executeCounter()
-            counterHandler.postDelayed(this, counterInterval)
+            delay(counterInterval)
         }
     }
-    private val counterNDKTask: Runnable = object : Runnable {
-        override fun run() {
+    private val counterNDKTask: suspend CoroutineScope.() -> Unit = {
+        while (isActive) {
             libBravoProxy.executeCounter()
-            counterNDKHandler.postDelayed(this, counterInterval)
+            delay(counterInterval)
         }
     }
-    private val counterSNXTask: Runnable = object : Runnable {
-        override fun run() {
+    private val counterSNXTask: suspend CoroutineScope.() -> Unit = {
+        while (isActive) {
             libCharlieProxy.executeCounter()
-            counterSNXHandler.postDelayed(this, counterInterval)
+            delay(counterInterval)
         }
     }
 
@@ -101,9 +106,9 @@ class QuestopiaBundle : Service(), GameInterface {
     }
 
     private fun removeCallback() {
-        counterHandler.removeCallbacks(counterTask)
-        counterNDKHandler.removeCallbacks(counterNDKTask)
-        counterSNXHandler.removeCallbacks(counterSNXTask)
+        counterMainJob.cancel()
+        counterNDKJob.cancel()
+        counterSNXJob.cancel()
     }
 
     override fun doChangeCurrGameDir(newGameDirUri: Uri?) {
@@ -158,21 +163,21 @@ class QuestopiaBundle : Service(), GameInterface {
     override fun doWithCounterDisabled(runnable: Runnable?) {
         when (mLibVersion) {
             570 -> {
-                counterNDKHandler.removeCallbacks(counterNDKTask)
+                counterNDKJob.cancel()
                 runnable?.run()
-                counterNDKHandler.postDelayed(counterNDKTask, counterInterval)
+                counterNDKJob = libHandlerScope.launch(block = counterNDKTask)
             }
 
             575 -> {
-                counterSNXHandler.removeCallbacks(counterSNXTask)
+                counterSNXJob.cancel()
                 runnable?.run()
-                counterSNXHandler.postDelayed(counterSNXTask, counterInterval)
+                counterSNXJob = libHandlerScope.launch(block = counterSNXTask)
             }
 
             592 -> {
-                counterHandler.removeCallbacks(counterTask)
+                counterMainJob.cancel()
                 runnable?.run()
-                counterHandler.postDelayed(counterTask, counterInterval)
+                counterMainJob = libHandlerScope.launch(block = counterMainTask)
             }
         }
     }
@@ -198,17 +203,17 @@ class QuestopiaBundle : Service(), GameInterface {
             mLibVersion = libVer
             when (mLibVersion) {
                 570 -> {
-                    counterNDKHandler.postDelayed(counterNDKTask, counterInterval)
+                    counterNDKJob = libHandlerScope.launch(block = counterNDKTask)
                     libBravoProxy.startLibThread()
                 }
 
                 575 -> {
-                    counterSNXHandler.postDelayed(counterSNXTask, counterInterval)
+                    counterSNXJob = libHandlerScope.launch(block = counterSNXTask)
                     libCharlieProxy.startLibThread()
                 }
 
                 592 -> {
-                    counterHandler.postDelayed(counterTask, counterInterval)
+                    counterMainJob = libHandlerScope.launch(block = counterMainTask)
                     libAlphaProxy.startLibThread()
                 }
             }
