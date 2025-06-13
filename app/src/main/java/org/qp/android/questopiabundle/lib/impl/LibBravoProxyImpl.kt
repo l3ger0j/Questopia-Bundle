@@ -126,7 +126,6 @@ class LibBravoProxyImpl(
             if (!isWritableDir(context, gameDir)) return emptyList()
 
             val actions = mutableListOf<LibGenItem>()
-
             for (element in QSPGetActionData() ?: return emptyList()) {
                 if (element == null) continue
                 var tempImagePath = element.image ?: ""
