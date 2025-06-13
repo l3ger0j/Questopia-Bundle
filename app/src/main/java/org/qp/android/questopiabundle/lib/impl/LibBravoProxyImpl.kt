@@ -51,6 +51,8 @@ class LibBravoProxyImpl(
     private val currGameDir: DocumentFile?
         get() = fromUri(context, gameState.gameDirUri)
 
+    private val mutableMenuItemList: MutableList<LibGenItem> = mutableListOf()
+
     private fun runOnQspThread(runnable: Runnable) {
         if (libThreadInit) {
             libHandler.post {
@@ -448,13 +450,11 @@ class LibBravoProxyImpl(
     }
 
     override fun AddMenuItem(name: String?, imgPath: String?) {
-        gameState = gameState.copy(menuItemsList = listOf(LibGenItem(
-            name ?: "",
-            imgPath ?: ""
-        )))
+        mutableMenuItemList.add(LibGenItem(name ?: "", imgPath ?: ""))
     }
 
     override fun ShowMenu() {
+        gameState = gameState.copy(menuItemsList = mutableMenuItemList)
         val doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_MENU, null) ?: return
         val result = doShow.outNumValue
         if (result != -1) {
