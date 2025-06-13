@@ -132,6 +132,8 @@ class LibBravoProxyImpl(
                 var tempImagePath = element.image ?: ""
                 val tempText = element.text ?: ""
 
+                if (tempImagePath.isEmpty() && tempText.isEmpty()) continue
+
                 if (isNotEmptyOrBlank(tempImagePath)) {
                     val tempPath = normalizeContentPath(getFilename(tempImagePath))
                     val fileFromPath = gameDir.child(context, tempPath)
@@ -157,6 +159,8 @@ class LibBravoProxyImpl(
                 if (element == null) continue
                 var tempImagePath = element.image ?: ""
                 val tempText = element.text ?: ""
+
+                if (tempImagePath.isEmpty() && tempText.isEmpty()) continue
 
                 if (tempText.contains("<img")) {
                     if (!isContainsHtmlTags(tempText)) {
