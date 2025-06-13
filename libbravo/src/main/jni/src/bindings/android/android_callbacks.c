@@ -112,8 +112,9 @@ void qspCallSetInputStrText(QSP_CHAR* text)
 
 void qspCallAddMenuItem(QSP_CHAR* name, QSP_CHAR* imgPath)
 {
-	if (name == NULL || imgPath == NULL) return;
-	if (qspCallBacks[QSP_CALL_ADDMENUITEM]) {
+	if (name == NULL) return;
+	if (qspCallBacks[QSP_CALL_ADDMENUITEM])
+	{
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		jstring menuItemName = ndkToJavaString(javaEnv, name);
