@@ -291,8 +291,8 @@ int qspCallGetMSCount(void)
 
 void qspCallCloseFile(QSP_CHAR* file)
 {
-	if (file == NULL) return;
-	if (qspCallBacks[QSP_CALL_CLOSEFILE]) {
+	if (qspCallBacks[QSP_CALL_CLOSEFILE])
+	{
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		jstring qspText = ndkToJavaString(javaEnv, file);
@@ -376,7 +376,6 @@ char* qspCallGetFileContents(QSP_CHAR* fileName, int* filesize)
 
 void qspCallChangeQuestPath(QSP_CHAR* path)
 {
-	if (path == NULL) return;
 	if (qspCallBacks[QSP_CALL_CHANGEQUESTPATH]) {
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
