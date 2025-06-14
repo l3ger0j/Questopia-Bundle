@@ -59,7 +59,7 @@ void qspCallDebug(QSP_CHAR* str)
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		jstring qspText = ndkToJavaString(javaEnv, str);
 
-		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_DEBUG], qspText);
 		(*javaEnv)->DeleteLocalRef(javaEnv, qspText);
 		qspRestoreCallState(&state);
@@ -137,7 +137,7 @@ void qspCallSystem(QSP_CHAR* cmd)
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		jstring qspText = ndkToJavaString(javaEnv, cmd);
 
-		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SYSTEM], qspText);
 		(*javaEnv)->DeleteLocalRef(javaEnv, qspText);
 		qspRestoreCallState(&state);
@@ -167,7 +167,7 @@ void qspCallSaveGame(QSP_CHAR* file)
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		jstring qspText = ndkToJavaString(javaEnv, file);
 
-		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_FALSE, QSP_TRUE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SAVEGAMESTATUS], qspText);
 		(*javaEnv)->DeleteLocalRef(javaEnv, qspText);
 		qspRestoreCallState(&state);
@@ -182,7 +182,7 @@ void qspCallShowMessage(QSP_CHAR* text)
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		jstring qspText = ndkToJavaString(javaEnv, text);
 
-		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SHOWMSGSTR], qspText);
 		(*javaEnv)->DeleteLocalRef(javaEnv, qspText);
 		qspRestoreCallState(&state);
@@ -195,7 +195,7 @@ void qspCallShowMenu()
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
 
-		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_FALSE, QSP_TRUE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SHOWMENU]);
 		qspRestoreCallState(&state);
 	}
@@ -209,7 +209,7 @@ void qspCallShowPicture(QSP_CHAR* file)
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		jstring qspText = ndkToJavaString(javaEnv, file);
 
-		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SHOWIMAGE], qspText);
 		(*javaEnv)->DeleteLocalRef(javaEnv, qspText);
 		qspRestoreCallState(&state);
@@ -222,7 +222,7 @@ void qspCallShowWindow(int type, QSP_BOOL isShow)
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
 
-		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SHOWWINDOW], type, isShow);
 		qspRestoreCallState(&state);
 	}
@@ -236,7 +236,7 @@ void qspCallPlayFile(QSP_CHAR* file, int volume)
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		jstring qspText = ndkToJavaString(javaEnv, file);
 
-		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_PLAYFILE], qspText, volume);
 		(*javaEnv)->DeleteLocalRef(javaEnv, qspText);
 		qspRestoreCallState(&state);
@@ -252,8 +252,8 @@ QSP_BOOL qspCallIsPlayingFile(QSP_CHAR* file)
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		jstring qspText = ndkToJavaString(javaEnv, file);
 
-		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
-		isPlaying = (QSP_BOOL)(*javaEnv)->CallBooleanMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_ISPLAYINGFILE], qspText);
+		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
+		isPlaying = (*javaEnv)->CallBooleanMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_ISPLAYINGFILE], qspText);
 		(*javaEnv)->DeleteLocalRef(javaEnv, qspText);
 		qspRestoreCallState(&state);
 
@@ -268,7 +268,7 @@ void qspCallSleep(int msecs)
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
 
-		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_SLEEP], msecs);
 		qspRestoreCallState(&state);
 	}
@@ -297,7 +297,7 @@ void qspCallCloseFile(QSP_CHAR* file)
 		JNIEnv *javaEnv = ndkGetJniEnv();
 		jstring qspText = ndkToJavaString(javaEnv, file);
 
-		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_CLOSEFILE], qspText);
 		(*javaEnv)->DeleteLocalRef(javaEnv, qspText);
 		qspRestoreCallState(&state);
@@ -310,7 +310,7 @@ void qspCallDeleteMenu(void)
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
 
-		qspSaveCallState(&state, QSP_FALSE, QSP_FALSE);
+		qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		(*javaEnv)->CallVoidMethod(javaEnv, ndkApiObject, qspCallBacks[QSP_CALL_DELETEMENU]);
 		qspRestoreCallState(&state);
 	}
