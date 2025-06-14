@@ -106,9 +106,15 @@ class QuestopiaBundle : Service(), GameInterface {
     }
 
     private fun removeCallback() {
-        counterMainJob.cancel()
-        counterNDKJob.cancel()
-        counterSNXJob.cancel()
+        if (this::counterMainJob.isInitialized) {
+            counterMainJob.cancel()
+        }
+        if (this::counterNDKJob.isInitialized) {
+            counterNDKJob.cancel()
+        }
+        if (this::counterSNXJob.isInitialized) {
+            counterSNXJob.cancel()
+        }
     }
 
     override fun doChangeCurrGameDir(newGameDirUri: Uri?) {
