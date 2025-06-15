@@ -7,7 +7,6 @@ import android.os.Looper
 import android.os.SystemClock
 import androidx.core.os.HandlerCompat
 import androidx.documentfile.provider.DocumentFile
-import com.anggrayudi.storage.extension.toDocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.child
 import org.libsnxqsp.jni.SNXLib
@@ -30,6 +29,7 @@ import org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath
 import org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty
 import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
 import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.withLock
@@ -243,7 +243,6 @@ class LibCharlieProxyImpl(
                 gameDirUri = dir,
                 gameFileUri = file
             )
-            gameInterface.doChangeCurrGameDir(dir)
             if (!loadGameWorld()) return@doWithCounterDisabled
             gameStartTime = SystemClock.elapsedRealtime()
             lastMsCountCallTime = 0
@@ -362,8 +361,9 @@ class LibCharlieProxyImpl(
 
     @OptIn(ExperimentalContracts::class)
     override fun onShowImage(path: String?) {
-        if (!isNotEmptyOrBlank(path)) return
-        gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
+        if (isNotEmptyOrBlank(path)) {
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
+        }
     }
 
     override fun onSetTimer(msecs: Int) {
@@ -401,16 +401,15 @@ class LibCharlieProxyImpl(
         if (!isNotEmptyOrBlank(filename)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
-            try {
-                val saveFile = gameInterface.requestReceiveFile(filename).toDocumentFile(context)
-                if (isWritableFile(context, saveFile)) {
-                    gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
-                } else {
-                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
+            CompletableFuture
+                .supplyAsync { gameInterface.requestReceiveFile(filename) }
+                .thenAccept {
+                    if (it != Uri.EMPTY) {
+                        gameInterface.doWithCounterDisabled { loadGameState(it) }
+                    } else {
+                        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
+                    }
                 }
-            } catch (e: Exception) {
-                gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, e.toString())
-            }
         }
     }
 
@@ -419,13 +418,15 @@ class LibCharlieProxyImpl(
         if (!isNotEmptyOrBlank(filename)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null)
         } else {
-            val currGameDir = currGameDir ?: return
-            val saveFileUri = gameInterface.requestCreateFile(currGameDir.uri, filename)
-            if (saveFileUri != Uri.EMPTY) {
-                saveGameState(saveFileUri)
-            } else {
-                gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
-            }
+            CompletableFuture
+                .supplyAsync { gameInterface.requestCreateFile(filename) }
+                .thenAccept {
+                    if (it != Uri.EMPTY) {
+                        saveGameState(it)
+                    } else {
+                        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
+                    }
+                }
         }
     }
 

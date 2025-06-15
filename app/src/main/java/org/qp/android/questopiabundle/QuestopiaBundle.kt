@@ -63,9 +63,9 @@ class QuestopiaBundle : Service(), GameInterface {
         }
     }
 
-    override fun requestCreateFile(dirUri: Uri, path: String): Uri {
+    override fun requestCreateFile(path: String): Uri {
         try {
-            return callbacks.requestCreateFile(dirUri, path) ?: Uri.EMPTY
+            return callbacks.requestCreateFile(path) ?: Uri.EMPTY
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
             return Uri.EMPTY
@@ -117,9 +117,9 @@ class QuestopiaBundle : Service(), GameInterface {
         }
     }
 
-    override fun doChangeCurrGameDir(newGameDirUri: Uri?) {
+    override fun changeGameDir(filePath: String) {
         try {
-            callbacks.sendChangeCurrGameDir(newGameDirUri)
+            callbacks.changeGameDir(filePath)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
         }

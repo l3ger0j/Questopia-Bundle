@@ -7,7 +7,6 @@ import android.os.Looper
 import android.os.SystemClock
 import androidx.core.os.HandlerCompat
 import androidx.documentfile.provider.DocumentFile
-import com.anggrayudi.storage.extension.toDocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.child
 import org.libndkqsp.jni.NDKLib
@@ -30,6 +29,7 @@ import org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath
 import org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty
 import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
 import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.withLock
@@ -249,7 +249,6 @@ class LibBravoProxyImpl(
                 gameDirUri = dir,
                 gameFileUri = file
             )
-            gameInterface.doChangeCurrGameDir(dir)
             if (!loadGameWorld()) return@doWithCounterDisabled
             gameStartTime = SystemClock.elapsedRealtime()
             lastMsCountCallTime = 0
@@ -370,8 +369,9 @@ class LibBravoProxyImpl(
 
     @OptIn(ExperimentalContracts::class)
     override fun ShowPicture(path: String?) {
-        if (!isNotEmptyOrBlank(path)) return
-        gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
+        if (isNotEmptyOrBlank(path)) {
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, path)
+        }
     }
 
     override fun SetTimer(msecs: Int) {
@@ -408,29 +408,35 @@ class LibBravoProxyImpl(
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
             try {
-                val saveFile = gameInterface.requestReceiveFile(filename).toDocumentFile(context)
-                if (isWritableFile(context, saveFile)) {
-                    gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
-                } else {
-                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
-                }
+                CompletableFuture
+                    .supplyAsync { gameInterface.requestReceiveFile(filename) }
+                    .thenAccept {
+                        if (it != Uri.EMPTY) {
+                            gameInterface.doWithCounterDisabled { loadGameState(it) }
+                        } else {
+                            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
+                        }
+                    }
             } catch (e: Exception) {
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, e.toString())
             }
         }
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun SaveGame(filename: String?) {
-        if (filename == null) {
+        if (!isNotEmptyOrBlank(filename)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null)
         } else {
-            val currGameDir = currGameDir ?: return
-            val saveFileUri = gameInterface.requestCreateFile(currGameDir.uri, filename)
-            if (saveFileUri != Uri.EMPTY) {
-                saveGameState(saveFileUri)
-            } else {
-                gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
-            }
+            CompletableFuture
+                .supplyAsync { gameInterface.requestCreateFile(filename) }
+                .thenAccept {
+                    if (it != Uri.EMPTY) {
+                        saveGameState(it)
+                    } else {
+                        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
+                    }
+                }
         }
     }
 
@@ -483,25 +489,16 @@ class LibBravoProxyImpl(
     override fun GetFileContents(path: String?): ByteArray? {
         if (!isNotEmptyOrBlank(path)) return byteArrayOf()
 
-        val targetFile = gameInterface.requestReceiveFile(path).toDocumentFile(context)
-        val targetFileUri = targetFile?.uri ?: return null
-        if (targetFileUri == Uri.EMPTY) return null
+        val targetFileUri = gameInterface.requestReceiveFile(path)
+        if (targetFileUri == Uri.EMPTY) return byteArrayOf()
 
         return getFileContents(context, targetFileUri)
     }
 
     @OptIn(ExperimentalContracts::class)
     override fun ChangeQuestPath(path: String?) {
-        if (!isNotEmptyOrBlank(path)) return
-        val currGameDirUri = currGameDir?.uri ?: return
-        val newGameDirUri = gameInterface.requestReceiveFile(path)
-        if (newGameDirUri == Uri.EMPTY) {
-            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Game directory not found: $path")
-            return
+        if (isNotEmptyOrBlank(path)) {
+            gameInterface.changeGameDir(path)
         }
-        if (currGameDirUri != newGameDirUri) {
-            gameState = gameState.copy(gameDirUri = newGameDirUri)
-            gameInterface.doChangeCurrGameDir(newGameDirUri)
-        }
-    } // endregion LibQpCallbacks
+    }
 }

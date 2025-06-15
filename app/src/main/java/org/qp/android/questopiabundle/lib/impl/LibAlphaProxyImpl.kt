@@ -29,6 +29,7 @@ import org.qp.android.questopiabundle.utils.PathUtil.normalizeContentPath
 import org.qp.android.questopiabundle.utils.StringUtil.getStringOrEmpty
 import org.qp.android.questopiabundle.utils.StringUtil.isNotEmptyOrBlank
 import org.qp.android.questopiabundle.utils.ThreadUtil.isSameThread
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.withLock
@@ -236,7 +237,6 @@ class LibAlphaProxyImpl(
                 gameDirUri = dir,
                 gameFileUri = file
             )
-            gameInterface.doChangeCurrGameDir(dir)
             if (!loadGameWorld()) return@doWithCounterDisabled
             gameStartTime = SystemClock.elapsedRealtime()
             lastMsCountCallTime = 0
@@ -367,8 +367,9 @@ class LibAlphaProxyImpl(
 
     @OptIn(ExperimentalContracts::class)
     override fun onShowImage(file: String) {
-        if (!isNotEmptyOrBlank(file)) return
-        gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, file)
+        if (isNotEmptyOrBlank(file)) {
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_PICTURE, file)
+        }
     }
 
     override fun onSetTimer(msecs: Int) {
@@ -401,33 +402,35 @@ class LibAlphaProxyImpl(
 
     @OptIn(ExperimentalContracts::class)
     override fun onOpenGameStatus(file: String?) {
-        if (file == null) {
+        if (!isNotEmptyOrBlank(file)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
-            try {
-                val saveFile = gameInterface.requestReceiveFile(file).toDocumentFile(context)
-                if (isWritableFile(context, saveFile)) {
-                    gameInterface.doWithCounterDisabled { loadGameState(saveFile.uri) }
-                } else {
-                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
+            CompletableFuture
+                .supplyAsync { gameInterface.requestReceiveFile(file) }
+                .thenAccept {
+                    if (it != Uri.EMPTY) {
+                        gameInterface.doWithCounterDisabled { loadGameState(it) }
+                    } else {
+                        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
+                    }
                 }
-            } catch (e: Exception) {
-                gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, e.toString())
-            }
         }
     }
 
+    @OptIn(ExperimentalContracts::class)
     override fun onSaveGameStatus(file: String?) {
-        if (file == null) {
+        if (!isNotEmptyOrBlank(file)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null)
         } else {
-            val currGameDir = currGameDir ?: return
-            val saveFileUri = gameInterface.requestCreateFile(currGameDir.uri, file)
-            if (saveFileUri != Uri.EMPTY) {
-                saveGameState(saveFileUri)
-            } else {
-                gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
-            }
+            CompletableFuture
+                .supplyAsync { gameInterface.requestCreateFile(file) }
+                .thenAccept {
+                    if (it != Uri.EMPTY) {
+                        saveGameState(it)
+                    } else {
+                        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
+                    }
+                }
         }
     }
 
@@ -471,16 +474,8 @@ class LibAlphaProxyImpl(
 
     @OptIn(ExperimentalContracts::class)
     override fun onOpenGame(file: String, isNewGame: Boolean) {
-        if (!isNotEmptyOrBlank(file)) return
-        val currGameDirUri = currGameDir?.uri ?: return
-        val newGameDirUri = gameInterface.requestReceiveFile(file)
-        if (newGameDirUri == Uri.EMPTY) {
-            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Game directory not found: $file")
-            return
-        }
-        if (currGameDirUri != newGameDirUri) {
-            gameState = gameState.copy(gameDirUri = newGameDirUri)
-            gameInterface.doChangeCurrGameDir(newGameDirUri)
+        if (isNotEmptyOrBlank(file)) {
+            gameInterface.changeGameDir(file)
         }
     }
 }

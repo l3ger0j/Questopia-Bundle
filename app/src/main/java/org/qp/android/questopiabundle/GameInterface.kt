@@ -7,12 +7,12 @@ import org.qp.android.questopiabundle.lib.LibTypeWindow
 
 interface GameInterface {
     fun requestReceiveFile(filePath: String): Uri
-    fun requestCreateFile(dirUri: Uri, path: String): Uri
+    fun requestCreateFile(path: String): Uri
     fun isPlayingFile(filePath: String): Boolean
     fun closeAllFiles()
     fun closeFile(filePath: String?)
     fun playFile(path: String?, volume: Int)
-    fun doChangeCurrGameDir(newGameDirUri: Uri?)
+    fun changeGameDir(filePath: String)
     fun doUpdateState(request: LibRefIRequest)
     fun showLibDialog(dialog: LibTypeDialog?, inputString: String?): LibDialogRetValue?
     fun changeVisWindow(type: LibTypeWindow?, show: Boolean)
