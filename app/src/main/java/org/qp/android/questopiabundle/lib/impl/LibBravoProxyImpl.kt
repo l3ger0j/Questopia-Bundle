@@ -96,11 +96,11 @@ class LibBravoProxyImpl(
     private fun loadInterfaceConfiguration(): Boolean {
         val oldConfig = gameState.interfaceConfig
 
-        val htmlResult = QSPGetVarValues("USEHTML", 0) as VarValResp
-        val fSizeResult = QSPGetVarValues("FSIZE", 0) as VarValResp
-        val bColorResult = QSPGetVarValues("BCOLOR", 0) as VarValResp
-        val fColorResult = QSPGetVarValues("FCOLOR", 0) as VarValResp
-        val lColorResult = QSPGetVarValues("LCOLOR", 0) as VarValResp
+        val htmlResult = QSPGetVarValues("USEHTML", 0)
+        val fSizeResult = QSPGetVarValues("FSIZE", 0)
+        val bColorResult = QSPGetVarValues("BCOLOR", 0)
+        val fColorResult = QSPGetVarValues("FCOLOR", 0)
+        val lColorResult = QSPGetVarValues("LCOLOR", 0)
 
         val useHtml = htmlResult.intValue != 0
         val newConfig = oldConfig.copy(

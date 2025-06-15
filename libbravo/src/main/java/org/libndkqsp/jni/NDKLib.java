@@ -32,7 +32,7 @@ public abstract class NDKLib {
     public native String QSPGetVarsDesc();
     public native boolean QSPIsVarsDescChanged();
     public native Object QSPGetVarValuesCount(String name);
-    public native Object QSPGetVarValues(String name, int ind);//!!!STUB
+    public native VarValResp QSPGetVarValues(String name, int ind);//!!!STUB
     public native int QSPGetMaxVarsCount();
     public native Object QSPGetVarNameByIndex(int index);//!!!STUB
     /* Input string */
