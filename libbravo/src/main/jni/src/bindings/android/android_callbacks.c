@@ -146,7 +146,6 @@ void qspCallSystem(QSP_CHAR* cmd)
 
 void qspCallOpenGame(QSP_CHAR* file)
 {
-	if (file == NULL) return;
 	if (qspCallBacks[QSP_CALL_OPENGAMESTATUS]) {
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
@@ -161,7 +160,6 @@ void qspCallOpenGame(QSP_CHAR* file)
 
 void qspCallSaveGame(QSP_CHAR* file)
 {
-	if (file == NULL) return;
 	if (qspCallBacks[QSP_CALL_SAVEGAMESTATUS]) {
 		QSPCallState state;
 		JNIEnv *javaEnv = ndkGetJniEnv();
