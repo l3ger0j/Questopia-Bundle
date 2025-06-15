@@ -205,7 +205,7 @@ JNIEXPORT jboolean JNICALL Java_org_libndkqsp_jni_NDKLib_QSPExecuteSelActionCode
 		if (qspIsDisableCodeExec) return QSP_FALSE;
 		qspExecAction(qspCurSelAction);
 		if (qspErrorNum) return QSP_FALSE;
-		if ((QSP_BOOL)isRefresh) qspCallRefreshInt(QSP_FALSE);
+		if (isRefresh) qspCallRefreshInt(QSP_FALSE);
 	}
 	return QSP_TRUE;
 }
@@ -221,7 +221,7 @@ JNIEXPORT jboolean JNICALL Java_org_libndkqsp_jni_NDKLib_QSPSetSelActionIndex(JN
 		qspCurSelAction = ind;
 		qspExecLocByVarNameWithArgs(QSP_FMT("ONACTSEL"), 0, 0);
 		if (qspErrorNum) return QSP_FALSE;
-		if ((QSP_BOOL)isRefresh) qspCallRefreshInt(QSP_FALSE);
+		if (isRefresh) qspCallRefreshInt(QSP_FALSE);
 	}
 	return QSP_TRUE;
 }
