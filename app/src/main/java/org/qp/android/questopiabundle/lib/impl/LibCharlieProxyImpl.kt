@@ -8,6 +8,7 @@ import android.os.SystemClock
 import androidx.core.os.HandlerCompat
 import androidx.documentfile.provider.DocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
+import com.anggrayudi.storage.file.MimeType
 import com.anggrayudi.storage.file.child
 import org.libsnxqsp.jni.SNXLib
 import org.qp.android.questopiabundle.GameInterface
@@ -419,7 +420,7 @@ class LibCharlieProxyImpl(
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null)
         } else {
             CompletableFuture
-                .supplyAsync { gameInterface.requestCreateFile(filename) }
+                .supplyAsync { gameInterface.requestCreateFile(filename, MimeType.BINARY_FILE) }
                 .thenAccept {
                     if (it != Uri.EMPTY) {
                         saveGameState(it)

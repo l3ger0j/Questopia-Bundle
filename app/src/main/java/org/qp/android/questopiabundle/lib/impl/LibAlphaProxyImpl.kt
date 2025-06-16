@@ -9,6 +9,7 @@ import androidx.core.os.HandlerCompat
 import androidx.documentfile.provider.DocumentFile
 import com.anggrayudi.storage.extension.toDocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
+import com.anggrayudi.storage.file.MimeType
 import com.anggrayudi.storage.file.child
 import com.libqsp.jni.QSPLib
 import org.qp.android.questopiabundle.GameInterface
@@ -423,7 +424,7 @@ class LibAlphaProxyImpl(
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null)
         } else {
             CompletableFuture
-                .supplyAsync { gameInterface.requestCreateFile(file) }
+                .supplyAsync { gameInterface.requestCreateFile(file, MimeType.BINARY_FILE) }
                 .thenAccept {
                     if (it != Uri.EMPTY) {
                         saveGameState(it)

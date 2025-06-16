@@ -63,9 +63,9 @@ class QuestopiaBundle : Service(), GameInterface {
         }
     }
 
-    override fun requestCreateFile(path: String): Uri {
+    override fun requestCreateFile(path: String, mimeType: String): Uri {
         try {
-            return callbacks.requestCreateFile(path) ?: Uri.EMPTY
+            return callbacks.requestCreateFile(path, mimeType) ?: Uri.EMPTY
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
             return Uri.EMPTY

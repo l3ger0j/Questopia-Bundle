@@ -7,7 +7,7 @@ import org.qp.android.questopiabundle.lib.LibTypeWindow
 
 interface GameInterface {
     fun requestReceiveFile(filePath: String): Uri
-    fun requestCreateFile(path: String): Uri
+    fun requestCreateFile(path: String, mimeType: String): Uri
     fun isPlayingFile(filePath: String): Boolean
     fun closeAllFiles()
     fun closeFile(filePath: String?)
