@@ -217,6 +217,7 @@ class LibBravoProxyImpl(
     }
 
     override fun enableDebugMode(isDebug: Boolean) {
+        if (libLock.isLocked) return
         runOnQspThread { enableDebugMode(isDebug) }
     }
 
@@ -226,10 +227,12 @@ class LibBravoProxyImpl(
         gameDirUri: Uri,
         gameFileUri: Uri
     ) {
+        if (libLock.isLocked) return
         runOnQspThread { doRunGame(gameId, gameTitle, gameDirUri, gameFileUri) }
     }
 
     override fun restartGame() {
+        if (libLock.isLocked) return
         runOnQspThread {
             doRunGame(
                 gameState.gameId,
@@ -282,6 +285,7 @@ class LibBravoProxyImpl(
     }
 
     override fun onActionClicked(index: Int) {
+        if (libLock.isLocked) return
         runOnQspThread {
             if (!QSPSetSelActionIndex(index, false)) {
                 showLastQspError()
@@ -293,6 +297,7 @@ class LibBravoProxyImpl(
     }
 
     override fun onObjectSelected(index: Int) {
+        if (libLock.isLocked) return
         runOnQspThread {
             if (!QSPSetSelObjectIndex(index, true)) {
                 showLastQspError()
@@ -301,6 +306,7 @@ class LibBravoProxyImpl(
     }
 
     override fun onInputAreaClicked() {
+        if (libLock.isLocked) return
         runOnQspThread {
             val doShow =
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle")
@@ -314,6 +320,7 @@ class LibBravoProxyImpl(
     }
 
     override fun onUseExecutorString() {
+        if (libLock.isLocked) return
         runOnQspThread {
             val doShow =
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle")
@@ -326,6 +333,7 @@ class LibBravoProxyImpl(
     }
 
     override fun execute(code: String?) {
+        if (libLock.isLocked) return
         runOnQspThread {
             if (!QSPExecString(code, true)) {
                 showLastQspError()
@@ -408,19 +416,19 @@ class LibBravoProxyImpl(
         if (!isNotEmptyOrBlank(filename)) {
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
-            try {
-                CompletableFuture
-                    .supplyAsync { gameInterface.requestReceiveFile(filename) }
-                    .thenAccept {
-                        if (it != Uri.EMPTY) {
-                            gameInterface.doWithCounterDisabled { loadGameState(it) }
-                        } else {
-                            gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
-                        }
+            CompletableFuture
+                .supplyAsync { gameInterface.requestReceiveFile(filename) }
+                .thenAccept {
+                    if (it != Uri.EMPTY) {
+                        gameInterface.doWithCounterDisabled { loadGameState(it) }
+                    } else {
+                        gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
                     }
-            } catch (e: Exception) {
-                gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, e.toString())
-            }
+                }
+                .exceptionally {
+                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, it.toString())
+                    null
+                }
         }
     }
 
@@ -432,11 +440,15 @@ class LibBravoProxyImpl(
             CompletableFuture
                 .supplyAsync { gameInterface.requestCreateFile(filename, MimeType.BINARY_FILE) }
                 .thenAccept {
-                    if (it != Uri.EMPTY) {
+                    if (it != null && it != Uri.EMPTY) {
                         saveGameState(it)
                     } else {
                         gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
                     }
+                }
+                .exceptionally {
+                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, it.toString())
+                    null
                 }
         }
     }
