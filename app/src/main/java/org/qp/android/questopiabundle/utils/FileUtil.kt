@@ -5,8 +5,6 @@ import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.anggrayudi.storage.FileWrapper
-import com.anggrayudi.storage.file.DocumentFileCompat
-import com.anggrayudi.storage.file.child
 import com.anggrayudi.storage.file.isWritable
 import org.qp.android.questopiabundle.utils.StreamUtil.copy
 import java.io.ByteArrayOutputStream
@@ -51,7 +49,7 @@ object FileUtil {
             }
         } catch (ex: Exception) {
             // TODO: 04.12.2024 Add logger
-            Log.e("FileUtil", "Error reading file: $uriContent", ex)
+            Log.e(javaClass.simpleName, "Error reading file: $uriContent", ex)
             return null
         }
     }
@@ -76,7 +74,7 @@ object FileUtil {
             }
         } catch (ex: IOException) {
             // TODO: 04.12.2024 Add logger
-            Log.e("FileUtil", "Error reading file: $uriContent", ex)
+            Log.e(javaClass.simpleName, "Error reading file: $uriContent", ex)
         }
     }
 }
