@@ -56,7 +56,7 @@ class QuestopiaBundle : Service(), GameInterface {
 
     override fun requestReceiveFile(filePath: String): Uri {
         try {
-            return callbacks.requestReceiveFile(filePath)
+            return callbacks.requestReceiveFile(filePath) ?: Uri.EMPTY
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
             return Uri.EMPTY
