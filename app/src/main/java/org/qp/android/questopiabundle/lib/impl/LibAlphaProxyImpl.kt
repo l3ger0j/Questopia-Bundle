@@ -409,11 +409,15 @@ class LibAlphaProxyImpl(
             CompletableFuture
                 .supplyAsync { gameInterface.requestReceiveFile(file) }
                 .thenAccept {
-                    if (it != Uri.EMPTY) {
+                    if (it != null && it != Uri.EMPTY) {
                         gameInterface.doWithCounterDisabled { loadGameState(it) }
                     } else {
                         gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Save file not found")
                     }
+                }
+                .exceptionally {
+                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, it.toString())
+                    null
                 }
         }
     }
@@ -426,11 +430,15 @@ class LibAlphaProxyImpl(
             CompletableFuture
                 .supplyAsync { gameInterface.requestCreateFile(file, MimeType.BINARY_FILE) }
                 .thenAccept {
-                    if (it != Uri.EMPTY) {
+                    if (it != null && it != Uri.EMPTY) {
                         saveGameState(it)
                     } else {
                         gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, "Error access dir")
                     }
+                }
+                .exceptionally {
+                    gameInterface.showLibDialog(LibTypeDialog.DIALOG_ERROR, it.toString())
+                    null
                 }
         }
     }
