@@ -678,21 +678,17 @@ QSP_BOOL QSPOpenSavedGameFromData(const void *data, int dataSize, QSP_BOOL isRef
 	if (isRefresh) qspCallRefreshInt(QSP_FALSE);
 	return QSP_TRUE;
 }
-JNIEXPORT jboolean JNICALL Java_org_libndkqsp_jni_NDKLib_QSPOpenSavedGameFromData(JNIEnv *env, jobject this, jbyteArray data, jint dataSize, jboolean isRefresh)
+JNIEXPORT jboolean JNICALL Java_org_libndkqsp_jni_NDKLib_QSPOpenSavedGameFromData(JNIEnv *env, jobject this, jbyteArray data, jboolean isRefresh)
 {
-	//converting data
-	jbyte *jbuf = malloc(dataSize * sizeof(jbyte));
-	if (jbuf == NULL)
-		return JNI_FALSE;
-
-	(*env)->GetByteArrayRegion(env, data, 0, dataSize, jbuf);
-	int size = dataSize;
-	void *mydata = (void *)jbuf;
-
-	jboolean result = QSPOpenSavedGameFromData(mydata, size, (QSP_BOOL)isRefresh) == QSP_TRUE;
-
-	free(jbuf);
-	return result;
+	QSP_BOOL res;
+	jint dataSize;
+	jbyte *arrayData;
+	dataSize = (*env)->GetArrayLength(env, data);
+	arrayData = (*env)->GetByteArrayElements(env, data, 0);
+	res = QSPOpenSavedGameFromData(arrayData, dataSize, (QSP_BOOL)isRefresh) == QSP_TRUE;
+	(*env)->ReleaseByteArrayElements(env, data, arrayData, JNI_ABORT);
+	if (!res) return JNI_FALSE;
+	return JNI_TRUE;
 }
 
 /* Loading the state from memory via a string */

@@ -346,10 +346,10 @@ JNIEXPORT jboolean JNICALL Java_org_libndkqsp_jni_NDKLib_QSPOpenSavedGame
 /*
  * Class:     org_libndkqsp_jni_NDKLib
  * Method:    QSPOpenSavedGameFromData
- * Signature: ([BIZ)Z
+ * Signature: ([BZ)Z
  */
 JNIEXPORT jboolean JNICALL Java_org_libndkqsp_jni_NDKLib_QSPOpenSavedGameFromData
-  (JNIEnv *, jobject, jbyteArray, jint, jboolean);
+  (JNIEnv *, jobject, jbyteArray, jboolean);
 
 /*
  * Class:     org_libndkqsp_jni_NDKLib

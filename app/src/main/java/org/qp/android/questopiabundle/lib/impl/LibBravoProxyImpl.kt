@@ -266,7 +266,7 @@ class LibBravoProxyImpl(
         }
 
         val gameData = getFileContents(context, uri) ?: return
-        if (!QSPOpenSavedGameFromData(gameData, gameData.size, true)) {
+        if (!QSPOpenSavedGameFromData(gameData, true)) {
             showLastQspError()
         }
     }

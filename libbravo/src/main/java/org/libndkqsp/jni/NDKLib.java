@@ -64,7 +64,7 @@ public abstract class NDKLib {
     public native boolean QSPSaveGame(String fileName, boolean isRefresh);
     public native byte[] QSPSaveGameAsData(boolean isRefresh);
     public native boolean QSPOpenSavedGame(String fileName, boolean isRefresh);
-    public native boolean QSPOpenSavedGameFromData(byte[] data , int dataSize, boolean isRefresh);
+    public native boolean QSPOpenSavedGameFromData(byte[] data, boolean isRefresh);
     public native boolean QSPRestartGame(boolean isRefresh);
     public native void QSPSelectMenuItem(int index);
     //public native void QSPSetCallBack(int type, QSP_CALLBACK func)
