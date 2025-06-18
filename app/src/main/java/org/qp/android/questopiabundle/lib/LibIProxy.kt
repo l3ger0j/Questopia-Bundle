@@ -1,7 +1,9 @@
 package org.qp.android.questopiabundle.lib
 
 import android.net.Uri
+import kotlinx.coroutines.flow.MutableSharedFlow
 import org.qp.android.questopiabundle.GameInterface
+import org.qp.android.questopiabundle.LibReturnValue
 import org.qp.android.questopiabundle.dto.LibGameState
 
 interface LibIProxy {
@@ -32,4 +34,5 @@ interface LibIProxy {
     fun executeCounter()
     val gameState: LibGameState
     val gameInterface: GameInterface
+    val returnValueFlow: MutableSharedFlow<LibReturnValue>
 }

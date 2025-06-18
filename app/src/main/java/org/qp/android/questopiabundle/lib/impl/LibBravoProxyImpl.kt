@@ -10,8 +10,12 @@ import androidx.documentfile.provider.DocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.MimeType
 import com.anggrayudi.storage.file.child
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.libndkqsp.jni.NDKLib
 import org.qp.android.questopiabundle.GameInterface
+import org.qp.android.questopiabundle.LibReturnValue
 import org.qp.android.questopiabundle.dto.LibGameState
 import org.qp.android.questopiabundle.dto.LibGenItem
 import org.qp.android.questopiabundle.lib.LibIProxy
@@ -40,7 +44,8 @@ class LibBravoProxyImpl(
     private val context: Context,
     override var gameInterface: GameInterface,
     override var gameState: LibGameState = LibGameState(),
-    private var gameRequest: LibRefIRequest = LibRefIRequest()
+    override val returnValueFlow: MutableSharedFlow<LibReturnValue> = MutableSharedFlow(),
+    private var gameRequest: LibRefIRequest = LibRefIRequest(),
 ) : NDKLib(), LibIProxy {
 
     private val libLock = ReentrantLock()
@@ -302,11 +307,13 @@ class LibBravoProxyImpl(
 
     override fun onInputAreaClicked() {
         runOnQspThread {
-            val doShow =
-                gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle")
-                    ?: return@runOnQspThread
-            val input = doShow.outTextValue
-            QSPSetInputStrText(input)
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle")
+            val dialogValue = try {
+                runBlocking { returnValueFlow.first() }.dialogTextValue
+            } catch (e: Exception) {
+                ""
+            }
+            QSPSetInputStrText(dialogValue)
             if (!QSPExecUserInput(true)) {
                 showLastQspError()
             }
@@ -315,11 +322,13 @@ class LibBravoProxyImpl(
 
     override fun onUseExecutorString() {
         runOnQspThread {
-            val doShow =
-                gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle")
-                    ?: return@runOnQspThread
-            val input = doShow.outTextValue
-            if (!QSPExecString(input, true)) {
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle")
+            val dialogValue = try {
+                runBlocking { returnValueFlow.first() }.dialogTextValue
+            } catch (e: Exception) {
+                ""
+            }
+            if (!QSPExecString(dialogValue, true)) {
                 showLastQspError()
             }
         }
@@ -391,7 +400,16 @@ class LibBravoProxyImpl(
 
     @OptIn(ExperimentalContracts::class)
     override fun IsPlayingFile(path: String?): Boolean {
-        return isNotEmptyOrBlank(path) && gameInterface.isPlayingFile(path)
+        if (!isNotEmptyOrBlank(path)) {
+            return false
+        } else {
+            gameInterface.isPlayingFile(path)
+            return try {
+                runBlocking { returnValueFlow.first() }.playFileState
+            } catch (e: Exception) {
+                false
+            }
+        }
     }
 
     @OptIn(ExperimentalContracts::class)
@@ -409,7 +427,10 @@ class LibBravoProxyImpl(
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
             CompletableFuture
-                .supplyAsync { gameInterface.requestReceiveFile(filename) }
+                .supplyAsync {
+                    gameInterface.requestReceiveFile(filename)
+                    runBlocking { returnValueFlow.first() }.fileUri
+                }
                 .thenAccept {
                     if (it != Uri.EMPTY) {
                         gameInterface.doWithCounterDisabled { loadGameState(it) }
@@ -430,7 +451,10 @@ class LibBravoProxyImpl(
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null)
         } else {
             CompletableFuture
-                .supplyAsync { gameInterface.requestCreateFile(filename, MimeType.BINARY_FILE) }
+                .supplyAsync {
+                    gameInterface.requestCreateFile(filename, MimeType.BINARY_FILE)
+                    runBlocking { returnValueFlow.first() }.fileUri
+                }
                 .thenAccept {
                     if (it != null && it != Uri.EMPTY) {
                         saveGameState(it)
@@ -446,8 +470,12 @@ class LibBravoProxyImpl(
     }
 
     override fun InputBox(prompt: String?): String {
-        val doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, prompt) ?: return ""
-        return doShow.outTextValue
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, prompt)
+        return try {
+            runBlocking { returnValueFlow.first() }.dialogTextValue
+        } catch (e: Exception) {
+            ""
+        }
     }
 
     override fun GetMSCount(): Int {
@@ -466,10 +494,14 @@ class LibBravoProxyImpl(
 
     override fun ShowMenu() {
         gameState = gameState.copy(menuItemsList = mutableMenuItemList)
-        val doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_MENU, null) ?: return
-        val result = doShow.outNumValue
-        if (result != -1) {
-            QSPSelectMenuItem(result)
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_MENU, null)
+        val dialogValue = try {
+            runBlocking { returnValueFlow.first() }.dialogNumValue
+        } catch (e: Exception) {
+            -1
+        }
+        if (dialogValue != -1) {
+            QSPSelectMenuItem(dialogValue)
         }
     }
 
@@ -494,7 +526,8 @@ class LibBravoProxyImpl(
     override fun GetFileContents(path: String?): ByteArray? {
         if (!isNotEmptyOrBlank(path)) return byteArrayOf()
 
-        val targetFileUri = gameInterface.requestReceiveFile(path)
+        gameInterface.requestReceiveFile(path)
+        val targetFileUri = runBlocking { returnValueFlow.first() }.fileUri
         if (targetFileUri == Uri.EMPTY) return byteArrayOf()
 
         return getFileContents(context, targetFileUri)

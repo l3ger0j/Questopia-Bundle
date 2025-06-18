@@ -54,30 +54,27 @@ class QuestopiaBundle : Service(), GameInterface {
 
     @Volatile private var mLibVersion = 570
 
-    override fun requestReceiveFile(filePath: String): Uri {
+    override fun requestReceiveFile(filePath: String) {
         try {
-            return callbacks.requestReceiveFile(filePath) ?: Uri.EMPTY
+            callbacks.requestReceiveFile(filePath)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
-            return Uri.EMPTY
         }
     }
 
-    override fun requestCreateFile(path: String, mimeType: String): Uri {
+    override fun requestCreateFile(path: String, mimeType: String) {
         try {
-            return callbacks.requestCreateFile(path, mimeType) ?: Uri.EMPTY
+            callbacks.requestCreateFile(path, mimeType)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
-            return Uri.EMPTY
         }
     }
 
-    override fun isPlayingFile(filePath: String): Boolean {
+    override fun isPlayingFile(filePath: String) {
         try {
-            return callbacks.isPlayingFile(filePath)
+            callbacks.isPlayingFile(filePath)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Error", e)
-            return false
         }
     }
 
@@ -145,12 +142,11 @@ class QuestopiaBundle : Service(), GameInterface {
         }
     }
 
-    override fun showLibDialog(dialog: LibTypeDialog?, inputString: String?): LibDialogRetValue? {
+    override fun showLibDialog(dialog: LibTypeDialog?, inputString: String?) {
         try {
-            return callbacks.doOnShowDialog(LibResult(dialog), inputString)
+            callbacks.doShowDialog(LibResult(dialog), inputString)
         } catch (e: RemoteException) {
             Log.e("QuestopiaBundle", "Error", e)
-            return LibDialogRetValue()
         }
     }
 
@@ -321,6 +317,29 @@ class QuestopiaBundle : Service(), GameInterface {
                         LibGameRequest.USE_INPUT -> libAlphaProxy.onInputAreaClicked()
                         LibGameRequest.RESTART_GAME -> libAlphaProxy.restartGame()
                         LibGameRequest.EXECUTE_CODE -> libAlphaProxy.execute(codeToExec)
+                    }
+                }
+            }
+        }
+
+        override fun receiveValue(value: LibReturnValue?) {
+            if (value == null) return
+            when (mLibVersion) {
+                570 -> {
+                    libHandlerScope.launch {
+                        libBravoProxy.returnValueFlow.emit(value)
+                    }
+                }
+
+                575 -> {
+                    libHandlerScope.launch {
+                        libCharlieProxy.returnValueFlow.emit(value)
+                    }
+                }
+
+                592 -> {
+                    libHandlerScope.launch {
+                        libAlphaProxy.returnValueFlow.emit(value)
                     }
                 }
             }

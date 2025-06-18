@@ -12,7 +12,11 @@ import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.MimeType
 import com.anggrayudi.storage.file.child
 import com.libqsp.jni.QSPLib
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.qp.android.questopiabundle.GameInterface
+import org.qp.android.questopiabundle.LibReturnValue
 import org.qp.android.questopiabundle.dto.LibGameState
 import org.qp.android.questopiabundle.dto.LibGenItem
 import org.qp.android.questopiabundle.lib.LibIProxy
@@ -40,6 +44,7 @@ class LibAlphaProxyImpl(
     private val context: Context,
     override var gameInterface: GameInterface,
     override var gameState: LibGameState = LibGameState(),
+    override val returnValueFlow: MutableSharedFlow<LibReturnValue> = MutableSharedFlow(),
     private var gameRequest: LibRefIRequest = LibRefIRequest()
 ) : QSPLib(), LibIProxy {
 
@@ -290,11 +295,13 @@ class LibAlphaProxyImpl(
 
     override fun onInputAreaClicked() {
         runOnQspThread {
-            val doShow =
-                gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle")
-                    ?: return@runOnQspThread
-            val input = doShow.outTextValue
-            setInputStrText(input)
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle")
+            val dialogValue = try {
+                runBlocking { returnValueFlow.first() }.dialogTextValue
+            } catch (e: Exception) {
+                ""
+            }
+            setInputStrText(dialogValue)
             if (!execUserInput(true)) {
                 showLastQspError()
             }
@@ -303,11 +310,13 @@ class LibAlphaProxyImpl(
 
     override fun onUseExecutorString() {
         runOnQspThread {
-            val doShow =
-                gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle")
-                    ?: return@runOnQspThread
-            val input = doShow.outTextValue
-            if (!execString(input, true)) {
+            gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle")
+            val dialogValue = try {
+                runBlocking { returnValueFlow.first() }.dialogTextValue
+            } catch (e: Exception) {
+                ""
+            }
+            if (!execString(dialogValue, true)) {
                 showLastQspError()
             }
         }
@@ -389,7 +398,16 @@ class LibAlphaProxyImpl(
 
     @OptIn(ExperimentalContracts::class)
     override fun onIsPlayingFile(file: String): Boolean {
-        return isNotEmptyOrBlank(file) && gameInterface.isPlayingFile(file)
+        if (!isNotEmptyOrBlank(file)) {
+            return false
+        } else {
+            gameInterface.isPlayingFile(file)
+            return try {
+                runBlocking { returnValueFlow.first() }.playFileState
+            } catch (e: Exception) {
+                false
+            }
+        }
     }
 
     @OptIn(ExperimentalContracts::class)
@@ -407,7 +425,10 @@ class LibAlphaProxyImpl(
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_LOAD, null)
         } else {
             CompletableFuture
-                .supplyAsync { gameInterface.requestReceiveFile(file) }
+                .supplyAsync {
+                    gameInterface.requestReceiveFile(file)
+                    runBlocking { returnValueFlow.first() }.fileUri
+                }
                 .thenAccept {
                     if (it != null && it != Uri.EMPTY) {
                         gameInterface.doWithCounterDisabled { loadGameState(it) }
@@ -428,7 +449,10 @@ class LibAlphaProxyImpl(
             gameInterface.showLibDialog(LibTypeDialog.DIALOG_POPUP_SAVE, null)
         } else {
             CompletableFuture
-                .supplyAsync { gameInterface.requestCreateFile(file, MimeType.BINARY_FILE) }
+                .supplyAsync {
+                    gameInterface.requestCreateFile(file, MimeType.BINARY_FILE)
+                    runBlocking { returnValueFlow.first() }.fileUri
+                }
                 .thenAccept {
                     if (it != null && it != Uri.EMPTY) {
                         saveGameState(it)
@@ -444,8 +468,12 @@ class LibAlphaProxyImpl(
     }
 
     override fun onInputBox(text: String): String {
-        val doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, text) ?: return ""
-        return doShow.outTextValue
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, text)
+        return try {
+            runBlocking { returnValueFlow.first() }.dialogTextValue
+        } catch (e: Exception) {
+            ""
+        }
     }
 
     override fun onGetMsCount(): Int {
@@ -459,13 +487,12 @@ class LibAlphaProxyImpl(
     }
 
     override fun onShowMenu(items: Array<ListItem>): Int {
-        val doShow = gameInterface.showLibDialog(LibTypeDialog.DIALOG_MENU, null)
-            ?: return super.onShowMenu(items)
-        val result = doShow.outNumValue
-        if (result != -1) {
-            return result
+        gameInterface.showLibDialog(LibTypeDialog.DIALOG_MENU, null)
+        return try {
+            runBlocking { returnValueFlow.first() }.dialogNumValue
+        } catch (e: Exception) {
+            super.onShowMenu(items)
         }
-        return super.onShowMenu(items)
     }
 
     override fun onSleep(msecs: Int) {
