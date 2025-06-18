@@ -7,7 +7,6 @@ import android.os.Looper
 import android.os.SystemClock
 import androidx.core.os.HandlerCompat
 import androidx.documentfile.provider.DocumentFile
-import com.anggrayudi.storage.extension.toDocumentFile
 import com.anggrayudi.storage.file.DocumentFileCompat.fromUri
 import com.anggrayudi.storage.file.MimeType
 import com.anggrayudi.storage.file.child
