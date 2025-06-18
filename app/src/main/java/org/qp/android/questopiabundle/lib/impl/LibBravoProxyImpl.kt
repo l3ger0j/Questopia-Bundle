@@ -217,7 +217,6 @@ class LibBravoProxyImpl(
     }
 
     override fun enableDebugMode(isDebug: Boolean) {
-        if (libLock.isLocked) return
         runOnQspThread { enableDebugMode(isDebug) }
     }
 
@@ -227,12 +226,10 @@ class LibBravoProxyImpl(
         gameDirUri: Uri,
         gameFileUri: Uri
     ) {
-        if (libLock.isLocked) return
         runOnQspThread { doRunGame(gameId, gameTitle, gameDirUri, gameFileUri) }
     }
 
     override fun restartGame() {
-        if (libLock.isLocked) return
         runOnQspThread {
             doRunGame(
                 gameState.gameId,
@@ -285,7 +282,6 @@ class LibBravoProxyImpl(
     }
 
     override fun onActionClicked(index: Int) {
-        if (libLock.isLocked) return
         runOnQspThread {
             if (!QSPSetSelActionIndex(index, false)) {
                 showLastQspError()
@@ -297,7 +293,6 @@ class LibBravoProxyImpl(
     }
 
     override fun onObjectSelected(index: Int) {
-        if (libLock.isLocked) return
         runOnQspThread {
             if (!QSPSetSelObjectIndex(index, true)) {
                 showLastQspError()
@@ -306,7 +301,6 @@ class LibBravoProxyImpl(
     }
 
     override fun onInputAreaClicked() {
-        if (libLock.isLocked) return
         runOnQspThread {
             val doShow =
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_INPUT, "userInputTitle")
@@ -320,7 +314,6 @@ class LibBravoProxyImpl(
     }
 
     override fun onUseExecutorString() {
-        if (libLock.isLocked) return
         runOnQspThread {
             val doShow =
                 gameInterface.showLibDialog(LibTypeDialog.DIALOG_EXECUTOR, "execStringTitle")
@@ -333,7 +326,6 @@ class LibBravoProxyImpl(
     }
 
     override fun execute(code: String?) {
-        if (libLock.isLocked) return
         runOnQspThread {
             if (!QSPExecString(code, true)) {
                 showLastQspError()
@@ -342,7 +334,6 @@ class LibBravoProxyImpl(
     }
 
     override fun executeCounter() {
-        if (libLock.isLocked) return
         runOnQspThread {
             if (!QSPExecCounter(true)) {
                 showLastQspError()
