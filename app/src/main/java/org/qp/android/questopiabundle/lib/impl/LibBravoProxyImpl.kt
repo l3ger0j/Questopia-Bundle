@@ -334,6 +334,7 @@ class LibBravoProxyImpl(
     }
 
     override fun executeCounter() {
+        if (libLock.isLocked) return
         runOnQspThread {
             if (!QSPExecCounter(true)) {
                 showLastQspError()
