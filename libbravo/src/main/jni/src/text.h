@@ -29,6 +29,7 @@
 
 	/* External functions */
 	int qspAddText(QSP_CHAR **, QSP_CHAR *, int, int, QSP_BOOL);
+	int qspAddBufText(QSP_CHAR **, int *, QSP_CHAR *, int, int, QSP_BOOL);
 	QSP_CHAR *qspGetNewText(QSP_CHAR *, int);
 	QSP_CHAR *qspGetAddText(QSP_CHAR *, QSP_CHAR *, int, int);
 	QSP_BOOL qspClearText(void **, int *);

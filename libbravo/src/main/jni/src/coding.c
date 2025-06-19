@@ -448,22 +448,22 @@ int qspReCodeGetIntVal(QSP_CHAR *val)
 	return num;
 }
 
-int qspCodeWriteIntVal(QSP_CHAR **s, int len, int val, QSP_BOOL isCode)
+int qspCodeWriteIntVal(QSP_CHAR **s, int *bufSize, int len, int val, QSP_BOOL isCode)
 {
 	QSP_CHAR buf[12], *temp;
 	qspNumToStr(buf, val);
 	if (isCode)
 	{
 		temp = qspCodeReCode(buf, QSP_TRUE);
-		len = qspAddText(s, temp, len, -1, QSP_FALSE);
+		len = qspAddBufText(s, bufSize, temp, len, -1, QSP_FALSE);
 		free(temp);
 	}
 	else
-		len = qspAddText(s, buf, len, -1, QSP_FALSE);
-	return qspAddText(s, QSP_STRSDELIM, len, QSP_LEN(QSP_STRSDELIM), QSP_FALSE);
+		len = qspAddBufText(s, bufSize, buf, len, -1, QSP_FALSE);
+	return qspAddBufText(s, bufSize, QSP_STRSDELIM, len, QSP_LEN(QSP_STRSDELIM), QSP_FALSE);
 }
 
-int qspCodeWriteVal(QSP_CHAR **s, int len, QSP_CHAR *val, QSP_BOOL isCode)
+int qspCodeWriteVal(QSP_CHAR **s, int *bufSize, int len, QSP_CHAR *val, QSP_BOOL isCode)
 {
 	QSP_CHAR *temp;
 	if (val)
@@ -471,11 +471,11 @@ int qspCodeWriteVal(QSP_CHAR **s, int len, QSP_CHAR *val, QSP_BOOL isCode)
 		if (isCode)
 		{
 			temp = qspCodeReCode(val, QSP_TRUE);
-			len = qspAddText(s, temp, len, -1, QSP_FALSE);
+			len = qspAddBufText(s, bufSize, temp, len, -1, QSP_FALSE);
 			free(temp);
 		}
 		else
-			len = qspAddText(s, val, len, -1, QSP_FALSE);
+			len = qspAddBufText(s, bufSize, val, len, -1, QSP_FALSE);
 	}
-	return qspAddText(s, QSP_STRSDELIM, len, QSP_LEN(QSP_STRSDELIM), QSP_FALSE);
+	return qspAddBufText(s, bufSize, QSP_STRSDELIM, len, QSP_LEN(QSP_STRSDELIM), QSP_FALSE);
 }

@@ -47,6 +47,34 @@ int qspAddText(QSP_CHAR **dest, QSP_CHAR *val, int destLen, int valLen, QSP_BOOL
 	return ret;
 }
 
+int qspAddBufText(QSP_CHAR **dest, int *destBufSize, QSP_CHAR *val, int destLen, int valLen, QSP_BOOL isCreate)
+{
+	int ret;
+	QSP_CHAR *destPtr;
+	if (valLen < 0) valLen = qspStrLen(val);
+	if (!isCreate && *dest)
+	{
+		if (destLen < 0) destLen = qspStrLen(*dest);
+		ret = destLen + valLen;
+		if (ret + 1 > *destBufSize)
+		{
+			*destBufSize = ret + 2048;
+			*dest = (QSP_CHAR *)realloc(*dest, *destBufSize * sizeof(QSP_CHAR));
+		}
+		destPtr = *dest + destLen;
+	}
+	else
+	{
+		ret = valLen;
+		*destBufSize = ret + 2048;
+		*dest = (QSP_CHAR *)malloc(*destBufSize * sizeof(QSP_CHAR));
+		destPtr = *dest;
+	}
+	qspStrNCopy(destPtr, val, valLen);
+	destPtr[valLen] = 0;
+	return ret;
+}
+
 QSP_CHAR *qspGetNewText(QSP_CHAR *val, int valLen)
 {
 	QSP_CHAR *buf;
