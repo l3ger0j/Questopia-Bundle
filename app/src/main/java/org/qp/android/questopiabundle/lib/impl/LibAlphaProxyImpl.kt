@@ -338,7 +338,7 @@ class LibAlphaProxyImpl(
         }
     }
 
-    override fun onRefreshInt(isForced: Boolean) {
+    override fun onRefreshInt(isForced: Boolean, isNewDesc: Boolean) {
         gameState = if (isForced) {
             gameState.copy(
                 mainDesc = mainDesc,

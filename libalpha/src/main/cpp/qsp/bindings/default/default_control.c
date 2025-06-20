@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2024 Val Argunov (byte AT qsp DOT org) */
+/* Copyright (C) 2001-2025 Val Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -159,12 +159,6 @@ QSPString QSPGetVersion(void)
 QSPString QSPGetCompiledDateTime(void)
 {
     return QSP_STATIC_STR(QSP_FMT(__DATE__) QSP_FMT(", ") QSP_FMT(__TIME__));
-}
-/* ------------------------------------------------------------ */
-/* Get number of the full location updates */
-int QSPGetFullRefreshCount(void)
-{
-    return qspFullRefreshCount;
 }
 /* ------------------------------------------------------------ */
 /* Main description */

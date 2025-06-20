@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2024 Val Argunov (byte AT qsp DOT org) */
+/* Copyright (C) 2001-2025 Val Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -68,7 +68,7 @@
         QSP_CALL_SHOWWINDOW, /* void func(int type, QSP_BOOL toShow) */
         QSP_CALL_SHOWMENU, /* int func(QSPListItem *items, int count) */
         QSP_CALL_SHOWMSGSTR, /* void func(QSPString text) */
-        QSP_CALL_REFRESHINT, /* void func(QSP_BOOL isForced) */
+        QSP_CALL_REFRESHINT, /* void func(QSP_BOOL isForced, QSP_BOOL isNewDesc) */
         QSP_CALL_SETTIMER, /* void func(int msecs) */
         QSP_CALL_SETINPUTSTRTEXT, /* void func(QSPString text) */
         QSP_CALL_SYSTEM, /* void func(QSPString cmd) */

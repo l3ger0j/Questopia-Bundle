@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2024 Val Argunov (byte AT qsp DOT org) */
+/* Copyright (C) 2001-2025 Val Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -24,6 +24,7 @@
 #include "../../coding.h"
 #include "../../common.h"
 #include "../../errors.h"
+#include "../../locations.h"
 #include "../../objects.h"
 #include "../../text.h"
 
@@ -69,9 +70,16 @@ void qspCallRefreshInt(QSP_BOOL isForced)
     /* Refresh UI to show the latest state */
     if (qspCallbacks[QSP_CALL_REFRESHINT])
     {
+        static int oldFullRefreshCount = 0;
         QSPCallState state;
         qspPrepareCallback(&state, QSP_FALSE);
-        qspCallbacks[QSP_CALL_REFRESHINT](isForced);
+        if (qspFullRefreshCount != oldFullRefreshCount)
+        {
+            oldFullRefreshCount = qspFullRefreshCount;
+            qspCallbacks[QSP_CALL_REFRESHINT](isForced, QSP_TRUE);
+        }
+        else
+            qspCallbacks[QSP_CALL_REFRESHINT](isForced, QSP_FALSE);
         qspFinalizeCallback(&state, QSP_FALSE);
     }
 }

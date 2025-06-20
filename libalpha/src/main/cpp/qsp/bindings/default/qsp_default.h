@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2024 Val Argunov (byte AT qsp DOT org) */
+/* Copyright (C) 2001-2025 Val Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -71,6 +71,8 @@
 
     #ifdef __cplusplus
         typedef int (*QSP_CALLBACK)(...);
+    #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
+        typedef int (*QSP_CALLBACK)(...);
     #else
         typedef int (*QSP_CALLBACK)();
     #endif
@@ -91,7 +93,6 @@
     QSP_EXTERN void QSPSetCallback(int type, QSP_CALLBACK func);
     QSP_EXTERN QSPString QSPGetVersion(void);
     QSP_EXTERN QSPString QSPGetCompiledDateTime(void);
-    QSP_EXTERN int QSPGetFullRefreshCount(void);
     /* Debugging */
     QSP_EXTERN void QSPEnableDebugMode(QSP_BOOL isDebug);
     QSP_EXTERN void QSPGetCurStateData(QSPString *loc, int *actIndex, int *lineNum);

@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2024 Val Argunov (byte AT qsp DOT org) */
+/* Copyright (C) 2001-2025 Val Argunov (byte AT qsp DOT org) */
 /*
 * This library is free software; you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -24,7 +24,7 @@
     #define QSP_VARSDEFINES
 
     #define QSP_VARSBUCKETS 1024
-    #define QSP_VARSMAXBUCKETSIZE 50
+    #define QSP_VARSBUCKETSIZE 32
     #define QSP_VARGROUPSBATCHSIZE 256
     #define QSP_VARARGS QSP_FMT("ARGS")
     #define QSP_VARRES QSP_FMT("RESULT")
@@ -50,7 +50,6 @@
     {
         QSPVar *Vars;
         int VarsCount;
-        int Capacity;
     } QSPVarsBucket;
 
     typedef struct
