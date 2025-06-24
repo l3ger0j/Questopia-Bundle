@@ -11,8 +11,8 @@ android {
         applicationId = "org.qp.android.questopiabundle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 100300
-        versionName = "0.4.0"
+        versionCode = 100400
+        versionName = "0.5.0"
 		
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
