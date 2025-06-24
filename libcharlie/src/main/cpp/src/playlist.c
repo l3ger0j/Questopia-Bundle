@@ -23,8 +23,8 @@
 QSP_CHAR *qspPLFiles[QSP_MAXPLFILES];
 int qspPLFilesCount = 0;
 
-static void qspPlayFile(QSP_CHAR *, int, QSP_BOOL);
-static int qspSearchPlayList(QSP_CHAR *);
+INLINE void qspPlayFile(QSP_CHAR *, int, QSP_BOOL);
+INLINE int qspSearchPlayList(QSP_CHAR *);
 
 void qspClearPlayList(QSP_BOOL isFirst)
 {
@@ -37,7 +37,7 @@ void qspClearPlayList(QSP_BOOL isFirst)
 	qspPLFilesCount = 0;
 }
 
-static void qspPlayFile(QSP_CHAR *s, int volume, QSP_BOOL isAddToPlayList)
+INLINE void qspPlayFile(QSP_CHAR *s, int volume, QSP_BOOL isAddToPlayList)
 {
 	int len;
 	QSP_CHAR buf[4], *file;
@@ -66,7 +66,7 @@ static void qspPlayFile(QSP_CHAR *s, int volume, QSP_BOOL isAddToPlayList)
 	}
 }
 
-static int qspSearchPlayList(QSP_CHAR *file)
+INLINE int qspSearchPlayList(QSP_CHAR *file)
 {
 	QSP_CHAR *uName, *buf;
 	int i, bufSize, itemLen, len;

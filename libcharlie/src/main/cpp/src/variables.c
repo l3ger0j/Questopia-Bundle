@@ -46,16 +46,16 @@ unsigned char qspRand8[256] =
 	0xEA, 0x91, 0x34, 0xF6, 0x88, 0x43, 0x99, 0xD6, 0x89, 0x9B, 0x08, 0xF1, 0x5E, 0x1C, 0xB1, 0x13
 };
 
-static int qspIndStringCompare(const void *, const void *);
-static void qspRemoveArray(QSP_CHAR *);
-static void qspRemoveArrayItem(QSP_CHAR *, int);
-static void qspInitVarData(QSPVar *);
-static int qspGetVarTextIndex(QSPVar *, QSP_CHAR *, QSP_BOOL);
-static QSPVar *qspGetVarData(QSP_CHAR *, QSP_BOOL, int *);
-static void qspSetVar(QSP_CHAR *, QSPVariant *, QSP_CHAR);
-static void qspCopyVar(QSPVar *, QSPVar *, int, int);
+INLINE int qspIndStringCompare(const void *, const void *);
+INLINE void qspRemoveArray(QSP_CHAR *);
+INLINE void qspRemoveArrayItem(QSP_CHAR *, int);
+INLINE void qspInitVarData(QSPVar *);
+INLINE int qspGetVarTextIndex(QSPVar *, QSP_CHAR *, QSP_BOOL);
+INLINE QSPVar *qspGetVarData(QSP_CHAR *, QSP_BOOL, int *);
+INLINE void qspSetVar(QSP_CHAR *, QSPVariant *, QSP_CHAR);
+INLINE void qspCopyVar(QSPVar *, QSPVar *, int, int);
 
-static int qspIndStringCompare(const void *name, const void *compareTo)
+INLINE int qspIndStringCompare(const void *name, const void *compareTo)
 {
 	return qspStrsComp((QSP_CHAR *)name, ((QSPVarIndex *)compareTo)->Str);
 }
@@ -98,14 +98,14 @@ void qspEmptyVar(QSPVar *var)
 	qspInitVarData(var);
 }
 
-static void qspRemoveArray(QSP_CHAR *name)
+INLINE void qspRemoveArray(QSP_CHAR *name)
 {
 	QSPVar *var;
 	if (!(var = qspVarReferenceWithType(name, QSP_FALSE, 0))) return;
 	qspEmptyVar(var);
 }
 
-static void qspRemoveArrayItem(QSP_CHAR *name, int index)
+INLINE void qspRemoveArrayItem(QSP_CHAR *name, int index)
 {
 	QSPVar *var;
 	QSP_BOOL isRemoving;
@@ -137,7 +137,7 @@ static void qspRemoveArrayItem(QSP_CHAR *name, int index)
 	}
 }
 
-static void qspInitVarData(QSPVar *var)
+INLINE void qspInitVarData(QSPVar *var)
 {
 	var->Values = 0;
 	var->ValsCount = 0;
@@ -195,7 +195,7 @@ QSPVar *qspVarReferenceWithType(QSP_CHAR *name, QSP_BOOL isCreate, QSP_BOOL *isS
 	return var;
 }
 
-static int qspGetVarTextIndex(QSPVar *var, QSP_CHAR *str, QSP_BOOL isCreate)
+INLINE int qspGetVarTextIndex(QSPVar *var, QSP_CHAR *str, QSP_BOOL isCreate)
 {
 	QSP_CHAR *uStr;
 	QSPVarIndex *ind;
@@ -234,7 +234,7 @@ static int qspGetVarTextIndex(QSPVar *var, QSP_CHAR *str, QSP_BOOL isCreate)
 	return -1;
 }
 
-static QSPVar *qspGetVarData(QSP_CHAR *s, QSP_BOOL isSet, int *index)
+INLINE QSPVar *qspGetVarData(QSP_CHAR *s, QSP_BOOL isSet, int *index)
 {
 	QSPVar *var;
 	QSPVariant ind;

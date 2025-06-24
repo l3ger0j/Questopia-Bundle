@@ -19,8 +19,8 @@
 #include "statements.h"
 #include "text.h"
 
-static int qspProcessPreformattedStrings(QSP_CHAR *, QSPLineOfCode **);
-static int qspProcessEOLExtensions(QSPLineOfCode *, int, QSPLineOfCode **);
+INLINE int qspProcessPreformattedStrings(QSP_CHAR *, QSPLineOfCode **);
+INLINE int qspProcessEOLExtensions(QSPLineOfCode *, int, QSPLineOfCode **);
 
 void qspFreePrepLines(QSPLineOfCode *strs, int count)
 {
@@ -100,7 +100,7 @@ QSP_CHAR *qspJoinPrepLines(QSPLineOfCode *s, int count, QSP_CHAR *delim)
 	return txt;
 }
 
-static int qspProcessPreformattedStrings(QSP_CHAR *data, QSPLineOfCode **strs)
+INLINE int qspProcessPreformattedStrings(QSP_CHAR *data, QSPLineOfCode **strs)
 {
 	QSPLineOfCode *ret, *line;
 	QSP_BOOL isNewLine;
@@ -181,7 +181,7 @@ static int qspProcessPreformattedStrings(QSP_CHAR *data, QSPLineOfCode **strs)
 	return count;
 }
 
-static int qspProcessEOLExtensions(QSPLineOfCode *s, int count, QSPLineOfCode **strs)
+INLINE int qspProcessEOLExtensions(QSPLineOfCode *s, int count, QSPLineOfCode **strs)
 {
 	QSPLineOfCode *ret;
 	QSP_CHAR *str;

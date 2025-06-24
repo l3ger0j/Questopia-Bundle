@@ -138,7 +138,7 @@ void qspSetSeed(unsigned int seed)
 	qspRandZ = qspURand();
 }
 
-static unsigned int qspURand()
+INLINE unsigned int qspURand()
 {
 	if (--qspRandI < 0) qspRandI = 54;
 	if (--qspRandJ < 0) qspRandJ = 54;
