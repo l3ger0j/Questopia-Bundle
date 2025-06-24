@@ -18,12 +18,6 @@
 #ifndef QSP_BINDINGSCONFIG
 	#define QSP_BINDINGSCONFIG
 
-	/* Flash binding */
-	#ifdef _FLASH
-		#define QSP_BINDING
-		#include "flash/flash.h"
-	#endif
-
 	/* Java binding */
 	#ifdef _JAVA
 		#define QSP_BINDING
