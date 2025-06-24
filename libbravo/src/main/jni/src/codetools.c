@@ -116,7 +116,7 @@ INLINE int qspProcessPreformattedStrings(QSP_CHAR *data, QSPLineOfCode **strs)
 		{
 			if (++strLen >= strBufSize)
 			{
-				strBufSize <<= 1;
+                strBufSize = strLen + 256;
 				str = (QSP_CHAR *)realloc(str, strBufSize * sizeof(QSP_CHAR));
 			}
 			str[strLen - 1] = *data;
@@ -128,7 +128,7 @@ INLINE int qspProcessPreformattedStrings(QSP_CHAR *data, QSPLineOfCode **strs)
 					{
 						if (++strLen >= strBufSize)
 						{
-							strBufSize <<= 1;
+                            strBufSize = strLen + 256;
 							str = (QSP_CHAR *)realloc(str, strBufSize * sizeof(QSP_CHAR));
 						}
 						str[strLen - 1] = *data++;
@@ -153,9 +153,9 @@ INLINE int qspProcessPreformattedStrings(QSP_CHAR *data, QSPLineOfCode **strs)
 		else
 		{
 			str[strLen] = 0;
-			if (++count > bufSize)
+            if (++count >= bufSize)
 			{
-				bufSize <<= 1;
+                bufSize = count + 16;
 				ret = (QSPLineOfCode *)realloc(ret, bufSize * sizeof(QSPLineOfCode));
 			}
 			line = ret + count - 1;
@@ -190,17 +190,17 @@ INLINE int qspProcessEOLExtensions(QSPLineOfCode *s, int count, QSPLineOfCode **
 	while (i < count)
 	{
 		len = qspAddText(&str, s[i].Str, 0, -1, QSP_TRUE);
-		if (len >= QSP_LEN(QSP_EOLEXT))
+		if (len >= QSP_LEN(QSP_PREEOLEXT QSP_EOLEXT))
 		{
-			while (!qspStrsComp(str + len - QSP_LEN(QSP_EOLEXT), QSP_EOLEXT))
+			while (!qspStrsComp(str + len - QSP_LEN(QSP_PREEOLEXT QSP_EOLEXT), QSP_PREEOLEXT QSP_EOLEXT))
 			{
 				if (++i == count) break;
 				len = qspAddText(&str, s[i].Str, len - QSP_LEN(QSP_EOLEXT), -1, QSP_FALSE);
 			}
 		}
-		if (++newCount > bufSize)
+        if (++newCount >= bufSize)
 		{
-			bufSize <<= 1;
+            bufSize = newCount + 16;
 			ret = (QSPLineOfCode *)realloc(ret, bufSize * sizeof(QSPLineOfCode));
 		}
 		qspInitLineOfCode(ret + newCount - 1, str, lastNum);
