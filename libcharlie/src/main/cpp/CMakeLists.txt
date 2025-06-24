@@ -7,7 +7,7 @@ include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
 include(GNUInstallDirs)
 
-set(TARGET snxqsp PROPERTY CMAKE_C_STANDARD 11)
+set(TARGET snxqsp PROPERTY CMAKE_C_STANDARD 17)
 set(TARGET snxqsp PROPERTY CMAKE_C_STANDARD_REQUIRED ON)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -93,6 +93,7 @@ set(SNXQSP_SOURCES
 		src/bindings/android/android_control.c
 		src/bindings/android/android_coding.c
 		src/bindings/android/qsp_android.h
+		src/declarations.h
 		src/bindings/qsp.h
 		src/actions.c src/actions.h
 		src/callbacks.c src/callbacks.h
