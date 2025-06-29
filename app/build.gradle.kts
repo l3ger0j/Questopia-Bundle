@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "org.qp.android.questopiabundle"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "org.qp.android.questopiabundle"

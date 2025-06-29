@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "org.qp.android.questopiabundle.libalpha"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 26
