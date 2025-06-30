@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.anggrayudi.storage.FileWrapper
+import com.anggrayudi.storage.extension.openInputStream
 import com.anggrayudi.storage.file.isWritable
 import org.qp.android.questopiabundle.utils.StreamUtil.copy
 import java.io.ByteArrayOutputStream
@@ -35,15 +36,10 @@ object FileUtil {
         context: Context,
         uriContent: Uri
     ): ByteArray? {
-        val resolver = context.contentResolver
         try {
-            resolver.openInputStream(uriContent).use { `in` ->
+            uriContent.openInputStream(context).use { input ->
                 ByteArrayOutputStream().use { out ->
-                    if (`in` != null) {
-                        copy(`in`, out)
-                    } else {
-                        throw NullPointerException()
-                    }
+                    if (input != null) copy(input, out) else throw NullPointerException()
                     return out.toByteArray()
                 }
             }
@@ -65,7 +61,7 @@ object FileUtil {
     ) {
         val resolver = context.contentResolver
         try {
-            resolver.openOutputStream(uriContent, "w").use { out ->
+            resolver.openOutputStream(uriContent, "wt").use { out ->
                 if (out != null) {
                     out.write(dataToWrite)
                 } else {
